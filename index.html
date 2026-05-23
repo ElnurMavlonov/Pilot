@@ -509,6 +509,49 @@
         body.dark #panel-scope .border-slate-100 { border-color: #1e293b !important; }
         body.dark #osc-signal-label,
         body.dark #osc-freq-label { color: #475569 !important; }
+
+        /* ── Wire Tool ── */
+        #wire-tool-btn.active {
+            background: #6366f1 !important;
+            color: white !important;
+            border-color: #6366f1 !important;
+        }
+        #wire-mode-indicator {
+            position: fixed;
+            top: 72px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15,23,42,0.92);
+            color: #e0e7ff;
+            padding: 7px 18px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 600;
+            z-index: 55;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(99,102,241,0.4);
+        }
+        #wire-mode-indicator.visible { opacity: 1; }
+        #pin-tooltip {
+            position: fixed;
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 700;
+            z-index: 65;
+            pointer-events: none;
+            display: none;
+            white-space: nowrap;
+            letter-spacing: 0.03em;
+            border: 1px solid #334155;
+        }
+        body.dark #wire-mode-indicator { background: rgba(99,102,241,0.18); }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen overflow-hidden flex flex-col md:flex-row grid-bg">
@@ -831,7 +874,23 @@
             <button onclick="resetCamera()" class="p-3 bg-white/95 border border-slate-200 text-slate-700 rounded-xl shadow-lg hover:bg-white transition flex items-center gap-2 text-xs font-semibold cursor-pointer" title="Default Perspective">
                 <i class="fa-solid fa-camera-rotate text-indigo-400"></i> Reset View
             </button>
+            <!-- Wire color picker -->
+            <input type="color" id="wire-color-input" value="#ef4444"
+                title="Wire color"
+                oninput="activeWireColor=this.value"
+                class="p-1 bg-white/95 border border-slate-200 rounded-xl shadow-lg h-10 w-10 cursor-pointer">
+            <!-- Wire Tool Toggle -->
+            <button id="wire-tool-btn" onclick="toggleWireMode()"
+                title="Wire Tool (W)"
+                class="p-3 bg-white/95 border border-slate-200 text-slate-700 rounded-xl shadow-lg hover:bg-white transition flex items-center gap-2 text-xs font-semibold cursor-pointer">
+                <i class="fa-solid fa-bezier-curve text-indigo-400"></i> Wire
+            </button>
         </div>
+
+        <!-- Wire mode status indicator -->
+        <div id="wire-mode-indicator">⚡ Wire Mode — click a pin to start</div>
+        <!-- Pin name tooltip -->
+        <div id="pin-tooltip"></div>
 
         <!-- Floating SVG Schematic Overlay -->
         <div id="schematic-panel" class="absolute inset-4 md:inset-8 bg-white border border-slate-200 rounded-3xl p-6 hidden flex-col z-20 shadow-2xl max-w-xl overflow-y-auto">
@@ -1231,12 +1290,18 @@
             }
             if ((e.key === 's' || e.key === 'S') && !e.metaKey && !e.ctrlKey && !isEditing) shareCircuitLink();
             if ((e.key === 't' || e.key === 'T') && !e.metaKey && !e.ctrlKey && !isEditing) resetTour();
+            if ((e.key === 'w' || e.key === 'W') && !e.metaKey && !e.ctrlKey && !isEditing) toggleWireMode();
             if (e.key === 'Escape') {
                 const overlay = document.getElementById('shortcuts-overlay');
                 if (overlay && overlay.classList.contains('open')) overlay.classList.remove('open');
                 // Also close tour if active
                 const tourOverlay = document.getElementById('tour-overlay');
                 if (tourOverlay && tourOverlay.classList.contains('active')) tourSkip();
+                // Cancel wire draw or exit wire mode
+                if (isWireMode) {
+                    if (wireDrawStart) cancelWireDraw();
+                    else toggleWireMode();
+                }
             }
             if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && !isEditing) {
                 e.preventDefault(); undo();
@@ -1559,13 +1624,100 @@ void loop() {
             { id:'transistor_pnp', label:'Transistor (PNP)', icon:'fa-arrow-right-from-bracket', color:'text-teal-700', bg:'bg-teal-50', category:'passive', type:'transistor', variant:'PNP' },
         ];
 
-        const PARTS_DEFAULT_STATE = {
-            dht11: { activeTempC: 25, activeHumidity: 50 },
-            hcsr04: { activeDistanceCm: 100 },
-            pir: { activePirMotion: false },
-            servo: { activeServoAngle: 90 },
-            motor_l298n: { activeMotorSpeed: 0 },
-            relay: { activeRelayOn: false }
+        // ========================================================
+        // COMPONENT PIN REGISTRY (local-space offsets from group.position)
+        // ========================================================
+        const COMPONENT_PINS = {
+          arduino: [
+            { name:'GND',   pos:[ 1.8,0.35,-2.0], color:'#1e293b' },
+            { name:'5V',    pos:[-1.8,0.35,-2.0], color:'#ef4444' },
+            { name:'3.3V',  pos:[-1.8,0.35,-1.8], color:'#f97316' },
+            { name:'GND2',  pos:[-1.8,0.35,-1.6], color:'#1e293b' },
+            { name:'D13',   pos:[ 1.8,0.35,-1.6], color:'#6366f1' },
+            { name:'D12',   pos:[ 1.8,0.35,-1.4], color:'#6366f1' },
+            { name:'D11~',  pos:[ 1.8,0.35,-1.2], color:'#a855f7' },
+            { name:'D10~',  pos:[ 1.8,0.35,-1.0], color:'#a855f7' },
+            { name:'D9~',   pos:[ 1.8,0.35,-0.8], color:'#a855f7' },
+            { name:'D8',    pos:[ 1.8,0.35,-0.6], color:'#6366f1' },
+            { name:'D7',    pos:[ 1.8,0.35,-0.4], color:'#6366f1' },
+            { name:'D6~',   pos:[ 1.8,0.35,-0.2], color:'#a855f7' },
+            { name:'D5~',   pos:[ 1.8,0.35, 0.0], color:'#a855f7' },
+            { name:'D4',    pos:[ 1.8,0.35, 0.2], color:'#6366f1' },
+            { name:'D3~',   pos:[ 1.8,0.35, 0.4], color:'#a855f7' },
+            { name:'D2',    pos:[ 1.8,0.35, 0.6], color:'#6366f1' },
+            { name:'A0',    pos:[-1.8,0.35, 0.4], color:'#fbbf24' },
+            { name:'A1',    pos:[-1.8,0.35, 0.2], color:'#fbbf24' },
+            { name:'A2',    pos:[-1.8,0.35, 0.0], color:'#fbbf24' },
+            { name:'A3',    pos:[-1.8,0.35,-0.2], color:'#fbbf24' },
+            { name:'A4',    pos:[-1.8,0.35,-0.4], color:'#fbbf24' },
+            { name:'A5',    pos:[-1.8,0.35,-0.6], color:'#fbbf24' },
+          ],
+          esp32: [
+            { name:'3.3V', pos:[ 1.3,0.25,-1.5], color:'#f97316' },
+            { name:'GND',  pos:[ 1.3,0.25,-1.3], color:'#1e293b' },
+            { name:'D4',   pos:[ 1.3,0.25,-0.9], color:'#6366f1' },
+            { name:'D5',   pos:[ 1.3,0.25,-0.5], color:'#6366f1' },
+            { name:'D13',  pos:[ 1.3,0.25,-0.1], color:'#6366f1' },
+            { name:'D14',  pos:[ 1.3,0.25, 0.1], color:'#6366f1' },
+            { name:'D25',  pos:[ 1.3,0.25, 0.5], color:'#a855f7' },
+            { name:'D26',  pos:[ 1.3,0.25, 0.7], color:'#a855f7' },
+            { name:'D27',  pos:[ 1.3,0.25, 0.9], color:'#a855f7' },
+            { name:'D32',  pos:[ 1.3,0.25, 1.1], color:'#fbbf24' },
+            { name:'VIN',  pos:[-1.3,0.25,-1.5], color:'#ef4444' },
+            { name:'GND2', pos:[-1.3,0.25,-1.3], color:'#1e293b' },
+            { name:'D22',  pos:[-1.3,0.25,-0.1], color:'#6366f1' },
+            { name:'D21',  pos:[-1.3,0.25, 0.1], color:'#6366f1' },
+            { name:'D19',  pos:[-1.3,0.25, 0.3], color:'#6366f1' },
+            { name:'D18',  pos:[-1.3,0.25, 0.5], color:'#6366f1' },
+          ],
+          led:          [{ name:'anode(+)',    pos:[-0.15,0,0],     color:'#ef4444' },
+                         { name:'cathode(-)',  pos:[ 0.15,0,0],     color:'#94a3b8' }],
+          resistor:     [{ name:'pin1',        pos:[-0.22,-0.4,0],  color:'#94a3b8' },
+                         { name:'pin2',        pos:[ 0.22,-0.4,0],  color:'#94a3b8' }],
+          capacitor:    [{ name:'positive(+)', pos:[-0.08,0,0],     color:'#ef4444' },
+                         { name:'negative(-)', pos:[ 0.08,0,0],     color:'#94a3b8' }],
+          potentiometer:[{ name:'pinA',        pos:[-0.18,0,0],     color:'#94a3b8' },
+                         { name:'wiper',       pos:[ 0,   0,0],     color:'#6366f1' },
+                         { name:'pinB',        pos:[ 0.18,0,0],     color:'#94a3b8' }],
+          thermistor:   [{ name:'pin1',        pos:[-0.09,0,0],     color:'#94a3b8' },
+                         { name:'pin2',        pos:[ 0.09,0,0],     color:'#94a3b8' }],
+          transistor:   [{ name:'base(B)',     pos:[-0.18,0,0],     color:'#fbbf24' },
+                         { name:'collector(C)',pos:[ 0,   0,0],     color:'#6366f1' },
+                         { name:'emitter(E)',  pos:[ 0.18,0,0],     color:'#ef4444' }],
+          buzzer:       [{ name:'positive(+)', pos:[-0.15,0,0.45],  color:'#ef4444' },
+                         { name:'negative(-)', pos:[ 0.15,0,0.45],  color:'#94a3b8' }],
+          button:       [{ name:'pin1',        pos:[-0.2,-0.1,-0.2],color:'#94a3b8' },
+                         { name:'pin2',        pos:[ 0.2,-0.1,-0.2],color:'#94a3b8' },
+                         { name:'pin3',        pos:[-0.2,-0.1, 0.2],color:'#94a3b8' },
+                         { name:'pin4',        pos:[ 0.2,-0.1, 0.2],color:'#94a3b8' }],
+          ldr:          [{ name:'pin1',        pos:[-0.1,0,0],      color:'#94a3b8' },
+                         { name:'pin2',        pos:[ 0.1,0,0],      color:'#94a3b8' }],
+          dht11:        [{ name:'VCC',         pos:[-0.15,0,0],     color:'#ef4444' },
+                         { name:'DATA',        pos:[-0.05,0,0],     color:'#6366f1' },
+                         { name:'NC',          pos:[ 0.05,0,0],     color:'#94a3b8' },
+                         { name:'GND',         pos:[ 0.15,0,0],     color:'#1e293b' }],
+          hcsr04:       [{ name:'VCC',         pos:[-0.3,0,0],      color:'#ef4444' },
+                         { name:'TRIG',        pos:[-0.1,0,0],      color:'#6366f1' },
+                         { name:'ECHO',        pos:[ 0.1,0,0],      color:'#fbbf24' },
+                         { name:'GND',         pos:[ 0.3,0,0],      color:'#1e293b' }],
+          pir:          [{ name:'VCC',         pos:[-0.12,0,0],     color:'#ef4444' },
+                         { name:'OUT',         pos:[ 0,   0,0],     color:'#6366f1' },
+                         { name:'GND',         pos:[ 0.12,0,0],     color:'#1e293b' }],
+          servo:        [{ name:'GND',         pos:[-0.12,0,0],     color:'#1e293b' },
+                         { name:'5V',          pos:[ 0,   0,0],     color:'#ef4444' },
+                         { name:'Signal',      pos:[ 0.12,0,0],     color:'#f97316' }],
+          motor_l298n:  [{ name:'ENA',         pos:[-0.4,0,-0.42],  color:'#6366f1' },
+                         { name:'IN1',         pos:[-0.2,0,-0.42],  color:'#6366f1' },
+                         { name:'IN2',         pos:[ 0,  0,-0.42],  color:'#6366f1' },
+                         { name:'IN3',         pos:[ 0.2,0,-0.42],  color:'#6366f1' },
+                         { name:'ENB',         pos:[ 0.4,0,-0.42],  color:'#6366f1' }],
+          relay:        [{ name:'VCC',         pos:[-0.2,0,-0.42],  color:'#ef4444' },
+                         { name:'GND',         pos:[ 0,  0,-0.42],  color:'#1e293b' },
+                         { name:'IN',          pos:[ 0.2,0,-0.42],  color:'#6366f1' }],
+          breadboard:   [{ name:'VCC+',        pos:[ 1.55,0.14,-3.0],color:'#ef4444' },
+                         { name:'GND-',        pos:[ 1.65,0.14,-3.0],color:'#1e293b' },
+                         { name:'VCC+2',       pos:[ 1.55,0.14, 3.0],color:'#ef4444' },
+                         { name:'GND-2',       pos:[ 1.65,0.14, 3.0],color:'#1e293b' }],
         };
 
         let activePreset = "blink";
@@ -1641,6 +1793,15 @@ void loop() {
         const UNDO_MAX = 50;
         let _inRestore = false; // guard: prevents saveUndoSnapshot() during restoreSnapshot()
 
+        // Wire Tool State
+        let isWireMode      = false;
+        let wireDrawStart   = null;   // { group, pinIndex, pinName, worldPos }
+        let wirePreviewMesh = null;
+        let placedWires     = [];     // { id, fromCompId, fromPinIdx, toCompId, toPinIdx, color, mesh }
+        let wireIdCounter   = 0;
+        let activeWireColor = '#ef4444';
+        let hoveredPinSphere = null;
+
         // ========================================================
         // GEMINI AI INTEGRATION (30 Points Technical Metric)
         // ========================================================
@@ -1648,6 +1809,12 @@ void loop() {
             const inputField = document.getElementById("ai-input");
             const promptText = inputField.value.trim();
             if(!promptText) return;
+
+            // Route to free-build generator when Parts Library (free-build) mode is active
+            if (isFreeBuildMode) {
+                await generateAIFreeBuildCircuit(promptText);
+                return;
+            }
 
             showToast("AI is architecting your custom hardware setup...", true);
 
@@ -1759,6 +1926,134 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 applyPreset(fallbackKey);
                 showToast("Lab generated successfully using offline local patterns!", false);
             }
+        }
+
+        // ========================================================
+        // AI FREE-BUILD CIRCUIT GENERATOR
+        // ========================================================
+        async function generateAIFreeBuildCircuit(promptText) {
+            showToast("AI is building your circuit...", true);
+
+            const componentCatalog = Object.entries(COMPONENT_PINS).map(([type, pins]) => ({
+                type, pins: pins.map(p => p.name)
+            }));
+
+            const systemPrompt = `You are an expert electronics engineer. Design a complete working circuit for the user's request.
+
+Available components with their EXACT pin names:
+${JSON.stringify(componentCatalog, null, 2)}
+
+Return ONLY valid JSON matching this schema exactly:
+{
+  "description": "one-line circuit description",
+  "components": [
+    { "type": "arduino", "variant": null, "x": -2.5, "z": 0 },
+    { "type": "led",     "variant": "red","x":  2.0, "z": 0 }
+  ],
+  "connections": [
+    { "fromComponent": 0, "fromPin": "D13", "toComponent": 1, "toPin": "anode(+)", "color": "#ef4444" }
+  ],
+  "code": "// Arduino C++ sketch for this circuit",
+  "explanation": "Plain-English description of how the circuit works"
+}
+
+Layout and wiring rules:
+- Arduino Uno always at x: -2.5, z: 0
+- Space components at least 2 units apart on x or z axis
+- Use pin names EXACTLY as listed in the catalog (case-sensitive)
+- GND pins connect to GND, 5V connects to VCC/positive pins
+- Always add a current-limiting resistor (220Ω) in series for each LED
+- PWM pins (D3~, D5~, D6~, D9~, D10~, D11~) for analog output
+- Keep circuits to 8 components maximum for clarity`;
+
+            try {
+                if (!apiKey) throw new Error("no key");
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const resp = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `Build circuit: "${promptText}"` }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        generationConfig: { responseMimeType: 'application/json' }
+                    })
+                });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data   = await resp.json();
+                const result = JSON.parse(data.candidates[0].content.parts[0].text);
+                await applyAIFreeBuildCircuit(result);
+                showToast(`✨ ${result.description || 'AI circuit built!'}`, false);
+            } catch(err) {
+                console.error('AI free-build error:', err);
+                showToast("AI circuit build failed — check API key or simplify your request", false);
+            }
+        }
+
+        async function applyAIFreeBuildCircuit(data) {
+            // Wipe existing free-placed circuit
+            clearAllPlacedWires();
+            [...placedComponents].forEach(g => {
+                scene.remove(g);
+                g.traverse(c => { if (c.isMesh) { c.geometry?.dispose(); if (c.material) { c.material.dispose(); } } });
+            });
+            placedComponents = [];
+            componentCounters = {};
+
+            // Place all components
+            const groups = (data.components || []).map(comp =>
+                createComponent(comp.type, comp.variant || null, comp.x ?? 0, comp.z ?? 0)
+            );
+
+            // Let Three.js process one frame so world matrices are correct
+            await new Promise(r => requestAnimationFrame(r));
+            renderer.render(scene, camera);
+
+            // Create wire connections
+            (data.connections || []).forEach(conn => {
+                const fromG = groups[conn.fromComponent];
+                const toG   = groups[conn.toComponent];
+                if (!fromG || !toG) return;
+                const fromDefs = getComponentPinDefs(fromG);
+                const toDefs   = getComponentPinDefs(toG);
+                const fIdx = fromDefs.findIndex(p => p.name === conn.fromPin);
+                const tIdx = toDefs.findIndex(p => p.name === conn.toPin);
+                if (fIdx === -1 || tIdx === -1) {
+                    console.warn(`AI wire: pin not found — "${conn.fromPin}" or "${conn.toPin}"`);
+                    return;
+                }
+                const fS = fromG.getObjectByName(`pin_${fIdx}`);
+                const tS = toG.getObjectByName(`pin_${tIdx}`);
+                if (!fS || !tS) return;
+                const fp = new THREE.Vector3(), tp = new THREE.Vector3();
+                fS.getWorldPosition(fp); tS.getWorldPosition(tp);
+                const mesh = createWireTube(generateWirePath(fp, tp), conn.color || '#ef4444');
+                scene.add(mesh);
+                placedWires.push({
+                    id:         `wire_${++wireIdCounter}`,
+                    fromCompId: fromG.userData.instanceId, fromPinIdx: fIdx,
+                    toCompId:   toG.userData.instanceId,   toPinIdx:   tIdx,
+                    color: conn.color || '#ef4444', mesh
+                });
+            });
+
+            // Set firmware code
+            if (data.code) {
+                const ce = document.getElementById('code-content');
+                if (ce) ce.value = data.code;
+            }
+            // Show explanation in step panel
+            if (data.explanation) {
+                const d = document.getElementById('step-desc');
+                if (d) d.textContent = data.explanation;
+                const t = document.getElementById('step-title');
+                if (t) t.textContent = '🤖 AI-Generated Circuit';
+                const i = document.getElementById('step-index');
+                if (i) i.textContent = 'AI Build';
+            }
+
+            refreshPlacedList();
+            saveUndoSnapshot();
+            glideCamera({ x: 0, y: 15, z: 8 }, { x: 0, y: 0, z: 0 });
         }
 
         function showToast(message, isPersistent) {
@@ -1927,6 +2222,277 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             document.getElementById("schematic-panel").classList.toggle("hidden");
         }
 
+
+        // ========================================================
+        // WIRE TOOL SYSTEM — Pins, draw, preview, render
+        // ========================================================
+
+        function getComponentPinDefs(group) {
+            return COMPONENT_PINS[group.userData.type] || [];
+        }
+
+        /** Attach invisible pin-sphere children to a component group */
+        function attachPinSpheres(group) {
+            const defs = getComponentPinDefs(group);
+            if (!defs.length) return;
+            const geom = new THREE.SphereGeometry(0.085, 8, 8);
+            defs.forEach((pin, idx) => {
+                const mat = new THREE.MeshStandardMaterial({
+                    color: pin.color || '#6366f1',
+                    emissive: pin.color || '#6366f1',
+                    emissiveIntensity: 0.55,
+                    transparent: true, opacity: 0.88
+                });
+                const sphere = new THREE.Mesh(geom, mat.clone());
+                sphere.position.set(...pin.pos);
+                sphere.userData = {
+                    isPinSphere: true,
+                    pinIndex: idx,
+                    pinName: pin.name,
+                    pinColor: pin.color || '#6366f1',
+                    componentGroup: group
+                };
+                sphere.visible = false;
+                sphere.name = `pin_${idx}`;
+                group.add(sphere);
+            });
+        }
+
+        /** Show / hide all pin spheres across all placed components */
+        function setPinSpheresVisible(show) {
+            placedComponents.forEach(g =>
+                g.traverse(c => { if (c.userData.isPinSphere) c.visible = show; })
+            );
+        }
+
+        /** Raycast only against visible pin spheres; returns mesh or null */
+        function raycastPinSpheres(e) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            const ray  = new THREE.Raycaster();
+            ray.setFromCamera(new THREE.Vector2(
+                ((e.clientX - rect.left) / rect.width)  * 2 - 1,
+                -((e.clientY - rect.top)  / rect.height) * 2 + 1
+            ), camera);
+            const allSpheres = [];
+            placedComponents.forEach(g =>
+                g.traverse(c => { if (c.userData.isPinSphere && c.visible) allSpheres.push(c); })
+            );
+            const hits = ray.intersectObjects(allSpheres, false);
+            return hits.length ? hits[0].object : null;
+        }
+
+        /** Toggle wire mode on / off */
+        function toggleWireMode() {
+            if (!isFreeBuildMode) {
+                showToast("Open the Parts Library tab first to use the Wire Tool", false);
+                return;
+            }
+            isWireMode = !isWireMode;
+            document.getElementById('wire-tool-btn')?.classList.toggle('active', isWireMode);
+            if (isWireMode) {
+                controls.enabled = false;
+                setPinSpheresVisible(true);
+            } else {
+                cancelWireDraw();
+                clearPinHighlight();
+                setPinSpheresVisible(false);
+                controls.enabled = true;
+            }
+            updateWireModeIndicator();
+        }
+
+        function updateWireModeIndicator() {
+            const el = document.getElementById('wire-mode-indicator');
+            if (!el) return;
+            if (!isWireMode) { el.classList.remove('visible'); return; }
+            el.textContent = wireDrawStart
+                ? `⚡ Wiring from "${wireDrawStart.pinName}" — click another pin  •  Esc to cancel`
+                : '⚡ Wire Mode — click any glowing pin to start  •  W or Esc to exit';
+            el.classList.add('visible');
+        }
+
+        /** Begin drawing a wire from pinSphere */
+        function startWireDraw(pinSphere) {
+            const worldPos = new THREE.Vector3();
+            pinSphere.getWorldPosition(worldPos);
+            wireDrawStart = {
+                group:    pinSphere.userData.componentGroup,
+                pinIndex: pinSphere.userData.pinIndex,
+                pinName:  pinSphere.userData.pinName,
+                worldPos: worldPos.clone()
+            };
+            pinSphere.material.emissiveIntensity = 1.2;
+            pinSphere.scale.setScalar(1.6);
+            updateWireModeIndicator();
+        }
+
+        /** Cancel in-progress wire draw */
+        function cancelWireDraw() {
+            if (wirePreviewMesh) {
+                scene.remove(wirePreviewMesh);
+                wirePreviewMesh.geometry?.dispose();
+                wirePreviewMesh = null;
+            }
+            if (wireDrawStart) {
+                wireDrawStart.group.traverse(c => {
+                    if (c.userData.isPinSphere && c.userData.pinIndex === wireDrawStart.pinIndex) {
+                        c.material.emissiveIntensity = 0.55;
+                        c.scale.setScalar(1.0);
+                    }
+                });
+                wireDrawStart = null;
+            }
+            updateWireModeIndicator();
+        }
+
+        /** Clear hovered pin highlight + tooltip */
+        function clearPinHighlight() {
+            if (hoveredPinSphere) {
+                const isStart = wireDrawStart &&
+                    hoveredPinSphere.userData.componentGroup === wireDrawStart.group &&
+                    hoveredPinSphere.userData.pinIndex === wireDrawStart.pinIndex;
+                if (!isStart) {
+                    hoveredPinSphere.material.emissiveIntensity = 0.55;
+                    hoveredPinSphere.scale.setScalar(1.0);
+                }
+                hoveredPinSphere = null;
+            }
+            const tt = document.getElementById('pin-tooltip');
+            if (tt) tt.style.display = 'none';
+        }
+
+        /** Smooth catmull arc path between two world-space points */
+        function generateWirePath(from, to) {
+            const dist = from.distanceTo(to);
+            const h    = Math.max(0.8, dist * 0.45);
+            const midX = (from.x + to.x) / 2;
+            const midZ = (from.z + to.z) / 2;
+            return [
+                from.clone(),
+                new THREE.Vector3(from.x, from.y + h * 0.6, from.z),
+                new THREE.Vector3(midX, Math.max(from.y, to.y) + h, midZ),
+                new THREE.Vector3(to.x, to.y + h * 0.6, to.z),
+                to.clone()
+            ];
+        }
+
+        /** Build a CatmullRom tube mesh */
+        function createWireTube(pathPoints, color, radius, opacity) {
+            radius  = radius  !== undefined ? radius  : 0.05;
+            opacity = opacity !== undefined ? opacity : 1.0;
+            const curve = new THREE.CatmullRomCurve3(pathPoints);
+            const geom  = new THREE.TubeGeometry(curve, 24, radius, 6, false);
+            const mat   = new THREE.MeshStandardMaterial({
+                color, roughness: 0.55, metalness: 0.0,
+                transparent: opacity < 1, opacity
+            });
+            return new THREE.Mesh(geom, mat);
+        }
+
+        /** Update the live preview wire as mouse moves */
+        function updateWirePreview(e) {
+            if (!wireDrawStart) return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            const ray  = new THREE.Raycaster();
+            ray.setFromCamera(new THREE.Vector2(
+                ((e.clientX - rect.left) / rect.width)  * 2 - 1,
+                -((e.clientY - rect.top)  / rect.height) * 2 + 1
+            ), camera);
+            const target = new THREE.Vector3();
+            if (!ray.ray.intersectPlane(groundPlane, target)) return;
+            if (wirePreviewMesh) {
+                scene.remove(wirePreviewMesh);
+                wirePreviewMesh.geometry?.dispose();
+                wirePreviewMesh = null;
+            }
+            wirePreviewMesh = createWireTube(
+                generateWirePath(wireDrawStart.worldPos, target),
+                activeWireColor, 0.04, 0.55
+            );
+            wirePreviewMesh.userData.isWirePreview = true;
+            scene.add(wirePreviewMesh);
+        }
+
+        /** Complete wire from wireDrawStart → toPinSphere */
+        function finishWireDraw(toPinSphere) {
+            if (!wireDrawStart) return;
+            const toGroup    = toPinSphere.userData.componentGroup;
+            const toPinIndex = toPinSphere.userData.pinIndex;
+            if (wireDrawStart.group === toGroup && wireDrawStart.pinIndex === toPinIndex) {
+                cancelWireDraw(); return;
+            }
+            if (wirePreviewMesh) {
+                scene.remove(wirePreviewMesh);
+                wirePreviewMesh.geometry?.dispose();
+                wirePreviewMesh = null;
+            }
+            const fromPos = new THREE.Vector3();
+            const toPos   = new THREE.Vector3();
+            const fromSph = wireDrawStart.group.getObjectByName(`pin_${wireDrawStart.pinIndex}`);
+            if (fromSph) fromSph.getWorldPosition(fromPos);
+            else fromPos.copy(wireDrawStart.worldPos);
+            toPinSphere.getWorldPosition(toPos);
+
+            const mesh = createWireTube(generateWirePath(fromPos, toPos), activeWireColor);
+            scene.add(mesh);
+            placedWires.push({
+                id:         `wire_${++wireIdCounter}`,
+                fromCompId: wireDrawStart.group.userData.instanceId,
+                fromPinIdx: wireDrawStart.pinIndex,
+                toCompId:   toGroup.userData.instanceId,
+                toPinIdx:   toPinIndex,
+                color:      activeWireColor,
+                mesh
+            });
+            // Reset pin visuals
+            wireDrawStart.group.traverse(c => {
+                if (c.userData.isPinSphere && c.userData.pinIndex === wireDrawStart.pinIndex) {
+                    c.material.emissiveIntensity = 0.55; c.scale.setScalar(1.0);
+                }
+            });
+            toPinSphere.material.emissiveIntensity = 0.55;
+            toPinSphere.scale.setScalar(1.0);
+            wireDrawStart = null;
+            updateWireModeIndicator();
+            saveUndoSnapshot();
+            showToast('Wire connected! ⚡', false);
+        }
+
+        /** Rebuild all placed-wire meshes (call after a component is moved) */
+        function rebuildAllPlacedWires() {
+            placedWires.forEach(wire => {
+                if (wire.mesh) { scene.remove(wire.mesh); wire.mesh.geometry?.dispose(); }
+                const fromG = placedComponents.find(g => g.userData.instanceId === wire.fromCompId);
+                const toG   = placedComponents.find(g => g.userData.instanceId === wire.toCompId);
+                if (!fromG || !toG) { wire.mesh = null; return; }
+                const fS = fromG.getObjectByName(`pin_${wire.fromPinIdx}`);
+                const tS = toG.getObjectByName(`pin_${wire.toPinIdx}`);
+                if (!fS || !tS) { wire.mesh = null; return; }
+                const fp = new THREE.Vector3(), tp = new THREE.Vector3();
+                fS.getWorldPosition(fp); tS.getWorldPosition(tp);
+                wire.mesh = createWireTube(generateWirePath(fp, tp), wire.color);
+                scene.add(wire.mesh);
+            });
+        }
+
+        /** Delete all wires connected to a component (call before removing group) */
+        function removeWiresForComponent(instanceId) {
+            const toRemove = placedWires.filter(w =>
+                w.fromCompId === instanceId || w.toCompId === instanceId
+            );
+            toRemove.forEach(wire => {
+                if (wire.mesh) { scene.remove(wire.mesh); wire.mesh.geometry?.dispose(); }
+                placedWires.splice(placedWires.indexOf(wire), 1);
+            });
+        }
+
+        /** Delete ALL placed wires (undo/redo restore) */
+        function clearAllPlacedWires() {
+            placedWires.forEach(w => {
+                if (w.mesh) { scene.remove(w.mesh); w.mesh.geometry?.dispose(); }
+            });
+            placedWires = [];
+        }
 
         // ========================================================
         // THREE.JS GRAPHICS RENDERING (30 Points Technical Metric)
@@ -3389,6 +3955,8 @@ Return ONLY a valid JSON object matching this TypeScript structure:
 
             group.userData = { instanceId, type, variant: variant || null, isFreePlaced: true };
             scene.add(group);
+            attachPinSpheres(group);
+            if (isWireMode) group.traverse(c => { if (c.userData.isPinSphere) c.visible = true; });
             placedComponents.push(group);
             saveUndoSnapshot();
             return group;
@@ -3427,7 +3995,28 @@ Return ONLY a valid JSON object matching this TypeScript structure:
 
         /** pointerdown — grab a component to drag, or let OrbitControls handle it */
         function onCanvasPointerDown(e) {
-            if (!isFreeBuildMode || e.button !== 0) return;
+            if (e.button !== 0) return;
+
+            // ── Wire Mode ──
+            if (isWireMode && isFreeBuildMode) {
+                closeCtxMenu();
+                const pinSphere = raycastPinSpheres(e);
+                if (pinSphere) {
+                    e.stopPropagation();
+                    if (!wireDrawStart) {
+                        startWireDraw(pinSphere);
+                    } else {
+                        finishWireDraw(pinSphere);
+                        clearPinHighlight();
+                    }
+                } else if (wireDrawStart) {
+                    cancelWireDraw();
+                }
+                return;
+            }
+
+            // ── Normal drag / select ──
+            if (!isFreeBuildMode) return;
             closeCtxMenu();
             const hit = raycastPlacedComponents(e);
             if (!hit) return;                       // nothing hit → OrbitControls takes over
@@ -3442,6 +4031,32 @@ Return ONLY a valid JSON object matching this TypeScript structure:
 
         /** pointermove — move the grabbed component, or update hover cursor */
         function onCanvasPointerMove(e) {
+            // ── Wire Mode ──
+            if (isWireMode && isFreeBuildMode) {
+                if (wireDrawStart) updateWirePreview(e);
+                const pinSphere = raycastPinSpheres(e);
+                if (pinSphere !== hoveredPinSphere) {
+                    clearPinHighlight();
+                    if (pinSphere) {
+                        hoveredPinSphere = pinSphere;
+                        pinSphere.material.emissiveIntensity = 1.2;
+                        pinSphere.scale.setScalar(1.4);
+                        const tt = document.getElementById('pin-tooltip');
+                        if (tt) {
+                            tt.textContent   = pinSphere.userData.pinName;
+                            tt.style.display = 'block';
+                            tt.style.left    = (e.clientX + 14) + 'px';
+                            tt.style.top     = (e.clientY  -  6) + 'px';
+                        }
+                    }
+                } else if (hoveredPinSphere) {
+                    const tt = document.getElementById('pin-tooltip');
+                    if (tt) { tt.style.left = (e.clientX + 14) + 'px'; tt.style.top = (e.clientY - 6) + 'px'; }
+                }
+                renderer.domElement.style.cursor = pinSphere ? 'crosshair' : (wireDrawStart ? 'crosshair' : 'default');
+                return;
+            }
+
             if (dragComponent) {
                 const dx = e.clientX - pointerDownPos.x;
                 const dz = e.clientY - pointerDownPos.y;
@@ -3478,6 +4093,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                     const s = snapToGrid(dragComponent.position.x, dragComponent.position.z);
                     dragComponent.position.x = s.x;
                     dragComponent.position.z = s.z;
+                    rebuildAllPlacedWires();   // keep wires attached after move
                     saveUndoSnapshot();
                     refreshPlacedList();
                 } else {
@@ -3527,6 +4143,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         function deleteSelectedComponent() {
             if (!selectedComponent) return;
             saveUndoSnapshot();
+            removeWiresForComponent(selectedComponent.userData.instanceId);
             scene.remove(selectedComponent);
             placedComponents.splice(placedComponents.indexOf(selectedComponent), 1);
             selectedComponent = null;
@@ -3540,6 +4157,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             if (!g) return;
             saveUndoSnapshot();
             if (g === selectedComponent) selectedComponent = null;
+            removeWiresForComponent(instanceId);
             scene.remove(g);
             placedComponents.splice(placedComponents.indexOf(g), 1);
             refreshPlacedList();
@@ -3611,6 +4229,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             Object.values(customMeshes).forEach(m => { if (m) m.visible = false; });
             activeWireMeshes.forEach(w => { w.visible = false; });
             placedComponents.forEach(g => { g.visible = true; });
+            if (isWireMode) setPinSpheresVisible(true);
             if (isSimulating) toggleSimulation();
             hideFreeBuildControlWrappers();
             document.getElementById("interactive-hardware-control")?.classList.add('hidden');
@@ -3622,6 +4241,15 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         /** Return to guided preset mode: hide free-placed, restore preset visibility */
         function enterPresetMode() {
             isFreeBuildMode = false;
+            if (isWireMode) {
+                isWireMode = false;
+                document.getElementById('wire-tool-btn')?.classList.remove('active');
+                cancelWireDraw();
+                clearPinHighlight();
+                document.getElementById('wire-mode-indicator')?.classList.remove('visible');
+                controls.enabled = true;
+            }
+            setPinSpheresVisible(false);
             placedComponents.forEach(g => { g.visible = false; });
             deselectComponent();
             hideFreeBuildControlWrappers();
@@ -5089,9 +5717,11 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             <div class="shortcut-row"><span class="sh-label">Zoom</span><span class="sh-keys"><kbd class="sh-key">Scroll</kbd></span></div>
             <div class="shortcut-row"><span class="sh-label">Pan</span><span class="sh-keys"><kbd class="sh-key">Right Drag</kbd></span></div>
 
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-3">Components</p>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-3">Components & Wiring</p>
             <div class="shortcut-row"><span class="sh-label">Delete Selected</span><span class="sh-keys"><kbd class="sh-key">Del</kbd></span></div>
             <div class="shortcut-row"><span class="sh-label">Context Menu</span><span class="sh-keys"><kbd class="sh-key">Right Click</kbd></span></div>
+            <div class="shortcut-row"><span class="sh-label">Toggle Wire Tool</span><span class="sh-keys"><kbd class="sh-key">W</kbd></span></div>
+            <div class="shortcut-row"><span class="sh-label">Cancel Wire / Exit Mode</span><span class="sh-keys"><kbd class="sh-key">Esc</kbd></span></div>
 
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-3">Sharing</p>
             <div class="shortcut-row"><span class="sh-label">Copy share link</span><span class="sh-keys"><kbd class="sh-key">S</kbd></span></div>
