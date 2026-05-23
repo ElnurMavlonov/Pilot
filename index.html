@@ -693,10 +693,6 @@
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><path d="M12 22V12"/><path d="m15 7-3-3-3 3"/><path d="M4 12h16"/></svg>
                         Push Trigger
                     </button>
-                    <button onclick="applyPreset('traffic')" class="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 rounded-lg px-2.5 py-1 transition cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><circle cx="12" cy="7" r="2"/><circle cx="12" cy="13" r="2"/><circle cx="12" cy="19" r="2"/><rect x="8" y="3" width="8" height="20" rx="2"/></svg>
-                        Traffic Light
-                    </button>
                     <button onclick="openCommunityLibrary()" class="inline-flex items-center gap-1 text-[10px] bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-semibold">
                         <i class="fa-solid fa-users"></i>
                         Community Library
@@ -1319,7 +1315,7 @@
         // APPLICATION CORE
         // ─────────────────────────────────────────────────────────
 
-        const apiKey = "%VITE_GEMINI_API_KEY%";
+        const apiKey = "";
 
         // Procedural Circuit Presets
         const PRESETS = {
@@ -1597,131 +1593,6 @@ void loop() {
     digitalWrite(LED_PIN, LOW);
   }
 }`
-            },
-            traffic: {
-                title: "Traffic Light Controller",
-                topic: "General Education",
-                steps: [
-                    {
-                        title: "1. Red LED — Stop Signal",
-                        desc: "Insert the Red LED into the breadboard at row 8. Connect Digital Pin 11 on the Arduino through a 220Ω resistor to the anode (+). Run a black ground wire from Pin GND to the cathode (–) bus.",
-                        tip: "Red means STOP. This LED will illuminate for 4 seconds per cycle.",
-                        camera: { x: 2.2, y: 4, z: 3 },
-                        lookAt: { x: 2.5, y: 0.2, z: -0.5 },
-                        visible: ["board", "breadboard", "led", "resistor"]
-                    },
-                    {
-                        title: "2. Yellow LED — Caution Signal",
-                        desc: "Place the Yellow LED two rows below at row 10. Wire Digital Pin 12 through a second 220Ω resistor to its anode. Share the common GND bus for the cathode.",
-                        tip: "Yellow warns drivers that the signal is about to change. It stays on for 2 seconds.",
-                        camera: { x: 2.2, y: 4, z: 3 },
-                        lookAt: { x: 2.5, y: 0.2, z: 0 },
-                        visible: ["board", "breadboard", "led", "resistor"]
-                    },
-                    {
-                        title: "3. Green LED — Go Signal",
-                        desc: "Insert the Green LED at row 12. Connect Digital Pin 13 through a third 220Ω resistor. Complete the ground bus tie-back to the Arduino GND pin.",
-                        tip: "Green means GO! In real traffic systems this phase lasts 4–8 seconds.",
-                        camera: { x: 2.5, y: 3.5, z: 2 },
-                        lookAt: { x: 2.5, y: 0.2, z: 0.5 },
-                        visible: ["board", "breadboard", "led", "resistor"]
-                    },
-                    {
-                        title: "4. Wire Up & Run Simulation",
-                        desc: "All three LEDs share one ground bus. Connect the black GND wire from Arduino to the breadboard rail, and the three signal wires to pins D11 (red), D12 (yellow), D13 (green).",
-                        tip: "Click 'Run Sandbox' to watch the traffic light sequence: Red → Yellow → Green → repeat.",
-                        camera: { x: 1, y: 8, z: 8 },
-                        lookAt: { x: 0.5, y: 0, z: 0 },
-                        visible: ["board", "breadboard", "led", "resistor", "wire_gnd", "wire_sig"]
-                    }
-                ],
-                wires: [
-                    { type: "wire_gnd", color: "#020617", path: [[-0.7, 0.3, -0.8], [-1, 1.8, -0.2], [1.2, 1.2, -1.2], [4.0, 0.25, -2.5]] },
-                    { type: "wire_sig", color: "#ef4444", path: [[-0.7, 0.3, -1.6], [-0.8, 2.2, -1.8], [2.5, 1.5, -0.8], [3.2, 0.25, -0.75]] },
-                    { type: "wire_sig", color: "#fbbf24", path: [[-0.7, 0.3, -1.4], [0, 2.0, -1.2], [2.5, 1.3, -0.4], [3.2, 0.25, -0.4]] },
-                    { type: "wire_sig", color: "#22c55e", path: [[-0.7, 0.3, -1.2], [0.2, 1.8, -0.8], [2.5, 1.1, -0.1], [3.2, 0.25, -0.1]] }
-                ],
-                activeComponent: "led",
-                interactiveType: "none",
-                schematic: `
-                    <rect x="30" y="50" width="100" height="200" rx="6" fill="#1e293b" stroke="#475569" stroke-width="2"/>
-                    <text x="80" y="42" fill="#94a3b8" font-size="12" font-weight="bold" text-anchor="middle">Arduino Uno</text>
-                    <text x="110" y="100" fill="#f8fafc" font-size="11" text-anchor="end">D11</text>
-                    <circle cx="120" cy="96" r="4" fill="#ef4444"/>
-                    <text x="110" y="140" fill="#f8fafc" font-size="11" text-anchor="end">D12</text>
-                    <circle cx="120" cy="136" r="4" fill="#fbbf24"/>
-                    <text x="110" y="180" fill="#f8fafc" font-size="11" text-anchor="end">D13</text>
-                    <circle cx="120" cy="176" r="4" fill="#22c55e"/>
-                    <text x="110" y="230" fill="#f8fafc" font-size="11" text-anchor="end">GND</text>
-                    <circle cx="120" cy="226" r="4" fill="#000000"/>
-                    <!-- Traffic housing -->
-                    <rect x="240" y="40" width="50" height="180" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
-                    <!-- Red LED -->
-                    <circle cx="265" cy="80" r="16" fill="#ef444430" stroke="#ef4444" stroke-width="2"/>
-                    <circle cx="265" cy="80" r="10" fill="#ef4444"/>
-                    <text x="265" y="84" fill="#fff" font-size="7" text-anchor="middle" font-weight="bold">R</text>
-                    <!-- Yellow LED -->
-                    <circle cx="265" cy="130" r="16" fill="#fbbf2430" stroke="#fbbf24" stroke-width="2"/>
-                    <circle cx="265" cy="130" r="10" fill="#fbbf24"/>
-                    <text x="265" y="134" fill="#fff" font-size="7" text-anchor="middle" font-weight="bold">Y</text>
-                    <!-- Green LED -->
-                    <circle cx="265" cy="180" r="16" fill="#22c55e30" stroke="#22c55e" stroke-width="2"/>
-                    <circle cx="265" cy="180" r="10" fill="#22c55e"/>
-                    <text x="265" y="184" fill="#fff" font-size="7" text-anchor="middle" font-weight="bold">G</text>
-                    <!-- Wires -->
-                    <path d="M 120 96 L 195 96 L 210 80 L 240 80" fill="none" stroke="#ef4444" stroke-width="2"/>
-                    <path d="M 120 136 L 195 136 L 195 130 L 240 130" fill="none" stroke="#fbbf24" stroke-width="2"/>
-                    <path d="M 120 176 L 195 176 L 195 180 L 240 180" fill="none" stroke="#22c55e" stroke-width="2"/>
-                    <!-- 220Ω resistors -->
-                    <path d="M 150 96 L 152 96 L 154 88 L 158 104 L 162 88 L 166 104 L 170 88 L 174 96 L 176 96" fill="none" stroke="#ef4444" stroke-width="1.5"/>
-                    <path d="M 150 130 L 152 130 L 154 122 L 158 138 L 162 122 L 166 138 L 170 122 L 174 130 L 176 130" fill="none" stroke="#fbbf24" stroke-width="1.5"/>
-                    <path d="M 150 176 L 152 176 L 154 168 L 158 184 L 162 168 L 166 184 L 170 168 L 174 176 L 176 176" fill="none" stroke="#22c55e" stroke-width="1.5"/>
-                    <!-- GND bus -->
-                    <path d="M 120 226 L 340 226 L 340 80" fill="none" stroke="#000000" stroke-width="2"/>
-                `,
-                code: `// 3-LED Traffic Light Controller
-const int RED_PIN    = 11;
-const int YELLOW_PIN = 12;
-const int GREEN_PIN  = 13;
-
-void allOff() {
-  digitalWrite(RED_PIN,    LOW);
-  digitalWrite(YELLOW_PIN, LOW);
-  digitalWrite(GREEN_PIN,  LOW);
-}
-
-void setup() {
-  pinMode(RED_PIN,    OUTPUT);
-  pinMode(YELLOW_PIN, OUTPUT);
-  pinMode(GREEN_PIN,  OUTPUT);
-  allOff();
-  Serial.begin(9600);
-}
-
-void loop() {
-  // ── RED phase (4 s) ──────────────────
-  allOff();
-  digitalWrite(RED_PIN, HIGH);
-  Serial.println("RED   — Stop");
-  delay(4000);
-
-  // ── RED + YELLOW transition (1 s) ────
-  digitalWrite(YELLOW_PIN, HIGH);
-  Serial.println("RED+YELLOW — Prepare to go");
-  delay(1000);
-
-  // ── GREEN phase (4 s) ────────────────
-  allOff();
-  digitalWrite(GREEN_PIN, HIGH);
-  Serial.println("GREEN — Go");
-  delay(4000);
-
-  // ── YELLOW warning (2 s) ─────────────
-  allOff();
-  digitalWrite(YELLOW_PIN, HIGH);
-  Serial.println("YELLOW — Caution");
-  delay(2000);
-}`
             }
         };
 
@@ -1853,7 +1724,6 @@ void loop() {
         let activeStep = 0;
         let isSimulating = false;
         let simInterval = null;
-        let trafficTick = 0;
 
         // Three.js State variables
         let scene, camera, renderer, controls;
@@ -1987,7 +1857,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             try {
                 if (!apiKey) throw new Error("Missing API Key");
 
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
                 const payload = {
                     contents: [{ parts: [{ text: `User request: "${promptText}"` }] }],
                     systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -2045,14 +1915,11 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 showToast("AI has generated your laboratory sandbox! Enjoy experimenting.", false);
             } catch (err) {
                 let fallbackKey = "blink";
-                const lp = promptText.toLowerCase();
-                if (lp.includes("traffic")) {
-                    fallbackKey = "traffic";
-                } else if (lp.includes("light") || lp.includes("dark") || lp.includes("ldr")) {
+                if (promptText.toLowerCase().includes("light") || promptText.toLowerCase().includes("dark") || promptText.toLowerCase().includes("ldr")) {
                     fallbackKey = "night";
-                } else if (lp.includes("siren") || lp.includes("sound") || lp.includes("buzz") || lp.includes("alarm")) {
+                } else if (promptText.toLowerCase().includes("siren") || promptText.toLowerCase().includes("sound") || promptText.toLowerCase().includes("buzz") || promptText.toLowerCase().includes("alarm")) {
                     fallbackKey = "alarm";
-                } else if (lp.includes("button") || lp.includes("switch") || lp.includes("press")) {
+                } else if (promptText.toLowerCase().includes("button") || promptText.toLowerCase().includes("switch") || promptText.toLowerCase().includes("press")) {
                     fallbackKey = "button";
                 }
                 await new Promise(r => setTimeout(r, 1200));
@@ -2101,7 +1968,7 @@ Layout and wiring rules:
 
             try {
                 if (!apiKey) throw new Error("no key");
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
                 const resp = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -3781,35 +3648,6 @@ Layout and wiring rules:
                     setBuzzerOutput(ticker, ticker ? 880 : 440);
                     appendSerial(ticker ? "Buzzer: BEEP (880 Hz)" : "Buzzer: silence (440 Hz)");
                 }
-                else if (activePreset === "traffic") {
-                    // 10-tick cycle: 4× RED → 2× YELLOW → 4× GREEN
-                    const trafficPhases = [
-                        { hex: 0xef4444, label: "RED    — Stop" },
-                        { hex: 0xef4444, label: "RED    — Stop" },
-                        { hex: 0xef4444, label: "RED    — Stop" },
-                        { hex: 0xef4444, label: "RED    — Stop" },
-                        { hex: 0xfbbf24, label: "YELLOW — Caution" },
-                        { hex: 0xfbbf24, label: "YELLOW — Caution" },
-                        { hex: 0x22c55e, label: "GREEN  — Go" },
-                        { hex: 0x22c55e, label: "GREEN  — Go" },
-                        { hex: 0x22c55e, label: "GREEN  — Go" },
-                        { hex: 0x22c55e, label: "GREEN  — Go" },
-                    ];
-                    const phase = trafficPhases[trafficTick % trafficPhases.length];
-                    const led = customMeshes["led"];
-                    if (led) {
-                        // children[0] = dome, children[1] = tip (share same material)
-                        led.children[0].material.color.setHex(phase.hex);
-                        led.children[0].material.emissive.setHex(phase.hex);
-                        // children[4] = PointLight glow
-                        if (led.children[4]) {
-                            led.children[4].color.setHex(phase.hex);
-                            led.children[4].intensity = 1.8;
-                        }
-                    }
-                    appendSerial(`Traffic: D11/D12/D13 → ${phase.label}`);
-                    trafficTick++;
-                }
                 else {
                     appendSerial("Simulation tick");
                 }
@@ -3850,14 +3688,6 @@ Layout and wiring rules:
         function resetAllComponentOutputs() {
             setLEDOutput(false);
             setBuzzerOutput(false);
-            trafficTick = 0;
-            // Restore LED to its original red colour after a traffic simulation
-            const led = customMeshes["led"];
-            if (led) {
-                led.children[0].material.color.set("#ef4444");
-                led.children[0].material.emissive.set("#000000");
-                if (led.children[4]) led.children[4].color.set("#ef4444");
-            }
             renderer.setClearColor(new THREE.Color("#e8edf2"), 1.0);
             resetPlacedSensorVisuals();
         }
