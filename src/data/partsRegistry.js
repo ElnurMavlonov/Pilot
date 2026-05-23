@@ -1,0 +1,95 @@
+export const PARTS_REGISTRY = [
+  { id: 'arduino_uno', label: 'Arduino Uno',          icon: 'fa-microchip',              color: 'text-indigo-600',  bg: 'bg-indigo-50',  category: 'microcontrollers', type: 'arduino' },
+  { id: 'esp32',       label: 'ESP32',                icon: 'fa-wifi',                   color: 'text-blue-600',    bg: 'bg-blue-50',    category: 'microcontrollers', type: 'esp32' },
+  { id: 'breadboard',  label: 'Breadboard',           icon: 'fa-table-cells',            color: 'text-slate-600',   bg: 'bg-slate-100',  category: 'prototyping',      type: 'breadboard' },
+  { id: 'led_red',     label: 'LED (Red)',            icon: 'fa-circle',                 color: 'text-red-500',     bg: 'bg-red-50',     category: 'actuators',        type: 'led',         variant: 'red' },
+  { id: 'led_green',   label: 'LED (Green)',          icon: 'fa-circle',                 color: 'text-green-500',   bg: 'bg-green-50',   category: 'actuators',        type: 'led',         variant: 'green' },
+  { id: 'led_blue',    label: 'LED (Blue)',           icon: 'fa-circle',                 color: 'text-blue-500',    bg: 'bg-blue-50',    category: 'actuators',        type: 'led',         variant: 'blue' },
+  { id: 'buzzer',      label: 'Piezo Buzzer',         icon: 'fa-volume-high',            color: 'text-amber-600',   bg: 'bg-amber-50',   category: 'actuators',        type: 'buzzer' },
+  { id: 'button',      label: 'Push Button',          icon: 'fa-hand-pointer',           color: 'text-pink-600',    bg: 'bg-pink-50',    category: 'sensors',          type: 'button' },
+  { id: 'ldr',         label: 'LDR Sensor',           icon: 'fa-sun',                    color: 'text-yellow-600',  bg: 'bg-yellow-50',  category: 'sensors',          type: 'ldr' },
+  { id: 'res_220',     label: 'Resistor 220Ω',   icon: 'fa-wave-square',            color: 'text-purple-600',  bg: 'bg-purple-50',  category: 'passive',          type: 'resistor',    variant: '220' },
+  { id: 'res_1k',      label: 'Resistor 1kΩ',    icon: 'fa-wave-square',            color: 'text-violet-600',  bg: 'bg-violet-50',  category: 'passive',          type: 'resistor',    variant: '1k' },
+  { id: 'res_10k',     label: 'Resistor 10kΩ',   icon: 'fa-wave-square',            color: 'text-fuchsia-600', bg: 'bg-fuchsia-50', category: 'passive',          type: 'resistor',    variant: '10k' },
+  { id: 'cap_elec',    label: 'Capacitor (Elec)',     icon: 'fa-battery-half',           color: 'text-slate-600',   bg: 'bg-slate-100',  category: 'passive',          type: 'capacitor',   variant: 'electrolytic' },
+  { id: 'cap_cer',     label: 'Capacitor (Ceramic)',  icon: 'fa-circle-half-stroke',     color: 'text-yellow-700',  bg: 'bg-yellow-50',  category: 'passive',          type: 'capacitor',   variant: 'ceramic' },
+  { id: 'pot',         label: 'Potentiometer',        icon: 'fa-sliders',                color: 'text-sky-600',     bg: 'bg-sky-50',     category: 'passive',          type: 'potentiometer' },
+  { id: 'thermistor',  label: 'Thermistor (NTC)',     icon: 'fa-temperature-half',       color: 'text-orange-600',  bg: 'bg-orange-50',  category: 'passive',          type: 'thermistor' },
+  { id: 'transistor_npn', label: 'Transistor (NPN)',  icon: 'fa-arrow-right-to-bracket', color: 'text-emerald-700', bg: 'bg-emerald-50', category: 'passive',          type: 'transistor',  variant: 'NPN' },
+  { id: 'transistor_pnp', label: 'Transistor (PNP)',  icon: 'fa-arrow-right-from-bracket', color: 'text-teal-700', bg: 'bg-teal-50',    category: 'passive',          type: 'transistor',  variant: 'PNP' },
+]
+
+export const SAMPLE_COMMUNITY_CIRCUITS = [
+  {
+    id: 'comm_001',
+    title: 'Smart Plant Watering System',
+    description: 'Automatically waters plants based on soil moisture levels using a sensor and relay-controlled pump.',
+    author: 'GreenThumb_Dev',
+    category: 'automation',
+    tags: ['arduino', 'sensors', 'automation', 'plants'],
+    rating: 4.5,
+    downloads: 342,
+    publishedDate: '2026-05-15',
+    circuit: null
+  },
+  {
+    id: 'comm_002',
+    title: 'RGB Mood Lamp',
+    description: 'Color-changing LED lamp controlled by buttons. Cycles through rainbow colors with smooth transitions.',
+    author: 'LightMaster',
+    category: 'education',
+    tags: ['led', 'rgb', 'beginner', 'lighting'],
+    rating: 4.8,
+    downloads: 567,
+    publishedDate: '2026-05-18',
+    circuit: null
+  },
+  {
+    id: 'comm_003',
+    title: 'Door Security Alarm',
+    description: 'Triggers a buzzer alarm when a door is opened using a magnetic reed switch sensor.',
+    author: 'SecureHome',
+    category: 'iot',
+    tags: ['security', 'buzzer', 'sensor', 'alarm'],
+    rating: 4.3,
+    downloads: 289,
+    publishedDate: '2026-05-10',
+    circuit: null
+  },
+  {
+    id: 'comm_004',
+    title: 'Temperature Monitor with Display',
+    description: 'Displays real-time temperature readings on an LCD screen using a DHT11 sensor.',
+    author: 'TempTracker',
+    category: 'sensors',
+    tags: ['temperature', 'lcd', 'dht11', 'monitoring'],
+    rating: 4.6,
+    downloads: 421,
+    publishedDate: '2026-05-12',
+    circuit: null
+  },
+  {
+    id: 'comm_005',
+    title: 'Line Following Robot',
+    description: 'Simple robot that follows a black line using IR sensors and DC motors.',
+    author: 'RoboBuilder',
+    category: 'robotics',
+    tags: ['robot', 'motors', 'sensors', 'autonomous'],
+    rating: 4.7,
+    downloads: 634,
+    publishedDate: '2026-05-08',
+    circuit: null
+  },
+  {
+    id: 'comm_006',
+    title: 'Traffic Light Simulator',
+    description: 'Educational project simulating a 3-way traffic light system with proper timing sequences.',
+    author: 'EduTech',
+    category: 'education',
+    tags: ['led', 'education', 'beginner', 'timing'],
+    rating: 4.4,
+    downloads: 512,
+    publishedDate: '2026-05-20',
+    circuit: null
+  }
+]

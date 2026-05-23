@@ -8,8 +8,25 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^3.4.19",
     "vite": "^5.4.0"
   },
-  "keywords": ["iot", "arduino", "three.js", "education", "ai", "electronics"],
-  "license": "MIT"
+  "keywords": [
+    "iot",
+    "arduino",
+    "three.js",
+    "education",
+    "ai",
+    "electronics"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "three": "^0.128.0",
+    "zustand": "^5.0.13"
+  }
 }
