@@ -165,6 +165,10 @@
             border-radius: 4px;
             color: #64748b;
         }
+
+        /* Parts Library drag states */
+        .part-card.dragging { opacity: 0.4; transform: scale(0.95); }
+        #canvas-view.drag-over { outline: 2px dashed #6366f1; outline-offset: -4px; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen overflow-hidden flex flex-col md:flex-row grid-bg">
@@ -204,8 +208,20 @@
             </div>
         </header>
 
-        <!-- Dynamic Control Interface -->
-        <div class="flex-1 overflow-y-auto p-5 space-y-5">
+        <!-- Tab Navigation: AI Copilot | Parts Library -->
+        <div class="flex items-center gap-1 px-4 pt-3 border-b border-slate-100 shrink-0">
+            <button id="tab-copilot" onclick="switchTab('copilot')"
+                class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-t-xl border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50 transition-all">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Copilot
+            </button>
+            <button id="tab-parts" onclick="switchTab('parts')"
+                class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-all">
+                <i class="fa-solid fa-boxes-stacked"></i> Parts
+            </button>
+        </div>
+
+        <!-- Dynamic Control Interface (AI Copilot Panel) -->
+        <div id="panel-copilot" class="flex-1 overflow-y-auto p-5 space-y-5">
 
             <!-- AI Prompter Block -->
             <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
@@ -311,6 +327,76 @@
                 </button>
             </div>
         </div>
+
+        <!-- Parts Library Panel -->
+        <div id="panel-parts" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
+
+            <!-- Search -->
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                <input id="parts-search" type="text" placeholder="Search components..."
+                    oninput="filterParts(this.value)"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-400">
+            </div>
+
+            <!-- Category: Microcontrollers -->
+            <div class="parts-category">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-microchip text-indigo-400"></i> Microcontrollers
+                </p>
+                <div class="grid grid-cols-2 gap-2" id="cat-microcontrollers"></div>
+            </div>
+
+            <!-- Category: Prototyping -->
+            <div class="parts-category">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-table-cells text-slate-400"></i> Prototyping
+                </p>
+                <div class="grid grid-cols-2 gap-2" id="cat-prototyping"></div>
+            </div>
+
+            <!-- Category: Actuators -->
+            <div class="parts-category">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-bolt text-amber-400"></i> Actuators
+                </p>
+                <div class="grid grid-cols-2 gap-2" id="cat-actuators"></div>
+            </div>
+
+            <!-- Category: Sensors -->
+            <div class="parts-category">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-satellite-dish text-emerald-400"></i> Sensors
+                </p>
+                <div class="grid grid-cols-2 gap-2" id="cat-sensors"></div>
+            </div>
+
+            <!-- Category: Passive -->
+            <div class="parts-category">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-wave-square text-purple-400"></i> Passive
+                </p>
+                <div class="grid grid-cols-2 gap-2" id="cat-passive"></div>
+            </div>
+
+            <!-- Placed Components List -->
+            <div id="placed-list-section" class="hidden border-t border-slate-100 pt-4">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-layer-group text-indigo-400"></i> Placed Components
+                    <span id="placed-count" class="ml-auto font-bold text-indigo-600">0</span>
+                </p>
+                <div id="placed-list" class="space-y-1.5"></div>
+            </div>
+
+            <!-- Hint -->
+            <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-start gap-2.5">
+                <i class="fa-solid fa-hand-pointer text-indigo-400 text-sm mt-0.5 shrink-0"></i>
+                <p class="text-[11px] text-indigo-700 leading-relaxed">
+                    Drag any part onto the 3D canvas to place it. Click to select, press <kbd class="kbd">Del</kbd> to remove.
+                </p>
+            </div>
+
+        </div><!-- end #panel-parts -->
 
     </aside>
 
@@ -867,6 +953,22 @@ void loop() {
             }
         };
 
+        // ─── Parts Library Registry ────────────────────────────────
+        const PARTS_REGISTRY = [
+            { id:'arduino_uno', label:'Arduino Uno',   icon:'fa-microchip',     color:'text-indigo-600', bg:'bg-indigo-50',   category:'microcontrollers', type:'arduino' },
+            { id:'esp32',       label:'ESP32',         icon:'fa-wifi',          color:'text-blue-600',   bg:'bg-blue-50',     category:'microcontrollers', type:'esp32' },
+            { id:'breadboard',  label:'Breadboard',    icon:'fa-table-cells',   color:'text-slate-600',  bg:'bg-slate-100',   category:'prototyping',      type:'breadboard' },
+            { id:'led_red',     label:'LED (Red)',     icon:'fa-circle',        color:'text-red-500',    bg:'bg-red-50',      category:'actuators',        type:'led',      variant:'red' },
+            { id:'led_green',   label:'LED (Green)',   icon:'fa-circle',        color:'text-green-500',  bg:'bg-green-50',    category:'actuators',        type:'led',      variant:'green' },
+            { id:'led_blue',    label:'LED (Blue)',    icon:'fa-circle',        color:'text-blue-500',   bg:'bg-blue-50',     category:'actuators',        type:'led',      variant:'blue' },
+            { id:'buzzer',      label:'Piezo Buzzer',  icon:'fa-volume-high',   color:'text-amber-600',  bg:'bg-amber-50',    category:'actuators',        type:'buzzer' },
+            { id:'button',      label:'Push Button',   icon:'fa-hand-pointer',  color:'text-pink-600',   bg:'bg-pink-50',     category:'sensors',          type:'button' },
+            { id:'ldr',         label:'LDR Sensor',    icon:'fa-sun',           color:'text-yellow-600', bg:'bg-yellow-50',   category:'sensors',          type:'ldr' },
+            { id:'res_220',     label:'Resistor 220Ω', icon:'fa-wave-square',   color:'text-purple-600', bg:'bg-purple-50',   category:'passive',          type:'resistor', variant:'220' },
+            { id:'res_1k',      label:'Resistor 1kΩ',  icon:'fa-wave-square',   color:'text-violet-600', bg:'bg-violet-50',   category:'passive',          type:'resistor', variant:'1k' },
+            { id:'res_10k',     label:'Resistor 10kΩ', icon:'fa-wave-square',   color:'text-fuchsia-600',bg:'bg-fuchsia-50',  category:'passive',          type:'resistor', variant:'10k' },
+        ];
+
         let activePreset = "blink";
         let activeStep = 0;
         let isSimulating = false;
@@ -881,6 +983,15 @@ void loop() {
         // Custom meshes stored globally for access/anim
         let customMeshes = {};
         let activeWireMeshes = [];
+
+        // Parts Library / Free Build state
+        let placedComponents = [];
+        let selectedComponent = null;
+        let groundPlane = null;
+        let draggedPartData = null;
+        let componentCounters = {};
+        let activeTab = 'copilot';
+        let isFreeBuildMode = false;
 
         // ========================================================
         // GEMINI AI INTEGRATION (30 Points Technical Metric)
@@ -1172,15 +1283,55 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             meshGroup = new THREE.Group();
             scene.add(meshGroup);
 
-            buildArduinoBoard();
-            buildBreadboard();
-            buildLED();
-            buildResistor();
-            buildPiezoBuzzer();
-            buildButton();
-            buildLDR();
+            // Ground plane for raycasting (y=0, normal up)
+            groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+            // Build preset components and register them
+            const _board = buildArduinoBoard(-2.5, 0); meshGroup.add(_board); customMeshes["board"] = _board;
+            const _bb    = buildBreadboard(2.5, 0);    meshGroup.add(_bb);    customMeshes["breadboard"] = _bb;
+            const _led   = buildLED(2.5, -0.8, 'red'); meshGroup.add(_led);   customMeshes["led"] = _led;
+            const _res   = buildResistor(3.4, -0.8, '220'); meshGroup.add(_res); customMeshes["resistor"] = _res;
+            const _buz   = buildPiezoBuzzer(2.5, 0.8); meshGroup.add(_buz);   customMeshes["buzzer"] = _buz;
+            const _btn   = buildButton(2.5, 1.8);      meshGroup.add(_btn);   customMeshes["button"] = _btn;
+            const _ldr   = buildLDR(2.5, -1.8);        meshGroup.add(_ldr);   customMeshes["ldr"] = _ldr;
 
             meshGroup.position.set(0, 0, 0);
+
+            // Drag-and-drop: part cards → canvas
+            container.addEventListener('dragover', e => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                container.classList.add('drag-over');
+            });
+            container.addEventListener('dragleave', e => {
+                if (!container.contains(e.relatedTarget)) {
+                    container.classList.remove('drag-over');
+                }
+            });
+            container.addEventListener('drop', e => {
+                e.preventDefault();
+                container.classList.remove('drag-over');
+                if (!draggedPartData) return;
+                const pos = getDropWorldPosition(e);
+                if (!pos) return;
+                const snapped = snapToGrid(pos.x, pos.z);
+                const group = createComponent(draggedPartData.type, draggedPartData.variant, snapped.x, snapped.z);
+                if (group) refreshPlacedList();
+                draggedPartData = null;
+            });
+
+            // Click to select placed components
+            renderer.domElement.addEventListener('click', onCanvasClick);
+
+            // Delete key removes selected component
+            window.addEventListener('keydown', e => {
+                if ((e.key === 'Delete' || e.key === 'Backspace') && selectedComponent && isFreeBuildMode) {
+                    // Don't fire if user is typing in an input
+                    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
+                    e.preventDefault();
+                    deleteSelectedComponent();
+                }
+            });
 
             // Use centralized resize handler
             window.addEventListener("resize", triggerCanvasResize);
@@ -1223,9 +1374,9 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         // ========================================================
         // 3D MODEL BUILDERS (Procedural Geometry)
         // ========================================================
-        function buildArduinoBoard() {
+        function buildArduinoBoard(x = -2.5, z = 0) {
             const board = new THREE.Group();
-            board.position.set(-2.5, 0, 0);
+            board.position.set(x, 0, z);
 
             const pcbGeom = new THREE.BoxGeometry(4.2, 0.1, 5.8);
             const pcbMat = new THREE.MeshStandardMaterial({ color: "#1e3a5f", roughness: 0.5 });
@@ -1256,13 +1407,42 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             rail2.position.set(1.8, 0.18, -0.6);
             board.add(rail1, rail2);
 
-            meshGroup.add(board);
-            customMeshes["board"] = board;
+            return board;
         }
 
-        function buildBreadboard() {
+        function buildESP32(x = 0, z = 0) {
+            const board = new THREE.Group();
+            board.position.set(x, 0, z);
+
+            const pcbMat = new THREE.MeshStandardMaterial({ color: "#1a3a2a", roughness: 0.5 });
+            const pcb = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.08, 4.2), pcbMat);
+            board.add(pcb);
+
+            // Antenna stub (characteristic ESP32 protrusion)
+            const ant = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.08, 1.0), pcbMat);
+            ant.position.set(0, 0, -2.6);
+            board.add(ant);
+
+            // Silver RF shield block
+            const silver = new THREE.MeshStandardMaterial({ color: "#94a3b8", metalness: 0.9, roughness: 0.1 });
+            const shield = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.3, 1.6), silver);
+            shield.position.set(0, 0.19, -0.5);
+            board.add(shield);
+
+            // Pin headers (both sides)
+            const darkMat = new THREE.MeshStandardMaterial({ color: "#0f172a" });
+            const rail1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 3.4), darkMat);
+            rail1.position.set(-1.3, 0.15, 0.2);
+            const rail2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 3.4), darkMat);
+            rail2.position.set(1.3, 0.15, 0.2);
+            board.add(rail1, rail2);
+
+            return board;
+        }
+
+        function buildBreadboard(x = 2.5, z = 0) {
             const breadboard = new THREE.Group();
-            breadboard.position.set(2.5, 0, 0);
+            breadboard.position.set(x, 0, z);
 
             const baseGeom = new THREE.BoxGeometry(3.6, 0.25, 8.5);
             const baseMat = new THREE.MeshStandardMaterial({ color: "#fafafa", roughness: 0.9 });
@@ -1297,19 +1477,21 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             blueRail.position.set(1.6, 0.13, 0);
             breadboard.add(redRail, blueRail);
 
-            meshGroup.add(breadboard);
-            customMeshes["breadboard"] = breadboard;
+            return breadboard;
         }
 
-        function buildLED() {
+        function buildLED(x = 2.5, z = -0.8, variant = 'red') {
             const led = new THREE.Group();
-            led.position.set(2.5, 0, -0.8);
+            led.position.set(x, 0, z);
+
+            const colorMap = { red: "#ef4444", green: "#22c55e", blue: "#3b82f6" };
+            const ledColor = colorMap[variant] || colorMap.red;
 
             const domeGeom = new THREE.CylinderGeometry(0.2, 0.2, 0.4, 16);
             const tipGeom = new THREE.SphereGeometry(0.2, 16, 16, 0, Math.PI*2, 0, Math.PI/2);
 
             const ledMat = new THREE.MeshStandardMaterial({
-                color: "#ef4444",
+                color: ledColor,
                 emissive: "#000000",
                 transparent: true,
                 opacity: 0.9,
@@ -1331,17 +1513,16 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             pin2.position.set(0.15, 0.5, 0);
             led.add(pin1, pin2);
 
-            const glow = new THREE.PointLight("#ef4444", 0, 5);
+            const glow = new THREE.PointLight(ledColor, 0, 5);
             glow.position.set(0, 1.3, 0);
             led.add(glow);
 
-            meshGroup.add(led);
-            customMeshes["led"] = led;
+            return led;
         }
 
-        function buildResistor() {
+        function buildResistor(x = 3.4, z = -0.8, variant = '220') {
             const r = new THREE.Group();
-            r.position.set(3.4, 0.4, -0.8);
+            r.position.set(x, 0.4, z);
 
             const bodyGeom = new THREE.CylinderGeometry(0.12, 0.12, 0.45, 12);
             bodyGeom.rotateZ(Math.PI / 2);
@@ -1351,13 +1532,19 @@ Return ONLY a valid JSON object matching this TypeScript structure:
 
             const stripeGeom = new THREE.CylinderGeometry(0.13, 0.13, 0.04, 12);
             stripeGeom.rotateZ(Math.PI/2);
-            const redMat = new THREE.MeshBasicMaterial({ color: "#ef4444" });
-            const brownMat = new THREE.MeshBasicMaterial({ color: "#78350f" });
-
-            const s1 = new THREE.Mesh(stripeGeom, redMat); s1.position.x = -0.12;
-            const s2 = new THREE.Mesh(stripeGeom, redMat); s2.position.x = 0;
-            const s3 = new THREE.Mesh(stripeGeom, brownMat); s3.position.x = 0.12;
-            r.add(s1, s2, s3);
+            const bandSchemes = {
+                '220': ["#ef4444", "#ef4444", "#78350f"],
+                '1k':  ["#78350f", "#000000", "#ef4444"],
+                '10k': ["#78350f", "#000000", "#f97316"]
+            };
+            const bands = bandSchemes[variant] || bandSchemes['220'];
+            const positions = [-0.12, 0, 0.12];
+            bands.forEach((color, i) => {
+                const mat = new THREE.MeshBasicMaterial({ color });
+                const s = new THREE.Mesh(stripeGeom.clone(), mat);
+                s.position.x = positions[i];
+                r.add(s);
+            });
 
             const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.4, 8);
             const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
@@ -1366,13 +1553,12 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             const l2 = new THREE.Mesh(leadGeom, metal); l2.position.set(0.22, -0.2, 0);
             r.add(l1, l2);
 
-            meshGroup.add(r);
-            customMeshes["resistor"] = r;
+            return r;
         }
 
-        function buildPiezoBuzzer() {
+        function buildPiezoBuzzer(x = 2.5, z = 0.8) {
             const buzzer = new THREE.Group();
-            buzzer.position.set(2.5, 0, 0.8);
+            buzzer.position.set(x, 0, z);
 
             const bodyGeom = new THREE.CylinderGeometry(0.5, 0.5, 0.6, 24);
             const bodyMat = new THREE.MeshStandardMaterial({ color: "#0f172a", roughness: 0.8 });
@@ -1386,13 +1572,12 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             inner.position.y = 0.8;
             buzzer.add(inner);
 
-            meshGroup.add(buzzer);
-            customMeshes["buzzer"] = buzzer;
+            return buzzer;
         }
 
-        function buildButton() {
+        function buildButton(x = 2.5, z = 1.8) {
             const btn = new THREE.Group();
-            btn.position.set(2.5, 0.13, 1.8);
+            btn.position.set(x, 0.13, z);
 
             const casingGeom = new THREE.BoxGeometry(0.45, 0.2, 0.45);
             const casingMat = new THREE.MeshStandardMaterial({ color: "#1e293b", roughness: 0.7 });
@@ -1406,13 +1591,12 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             cap.position.y = 0.25;
             btn.add(cap);
 
-            meshGroup.add(btn);
-            customMeshes["button"] = btn;
+            return btn;
         }
 
-        function buildLDR() {
+        function buildLDR(x = 2.5, z = -1.8) {
             const ldr = new THREE.Group();
-            ldr.position.set(2.5, 0.2, -1.8);
+            ldr.position.set(x, 0.2, z);
 
             const headGeom = new THREE.CylinderGeometry(0.2, 0.2, 0.08, 16);
             const headMat = new THREE.MeshStandardMaterial({ color: "#e2e8f0", roughness: 0.5 });
@@ -1432,8 +1616,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             const pin2 = new THREE.Mesh(leadGeom, metal); pin2.position.set(0.1, 0.2, 0);
             ldr.add(pin1, pin2);
 
-            meshGroup.add(ldr);
-            customMeshes["ldr"] = ldr;
+            return ldr;
         }
 
         function rebuildWiresIn3D(wiresData) {
@@ -1574,11 +1757,257 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             renderer.render(scene, camera);
         }
 
+        // ========================================================
+        // PARTS LIBRARY — Free Build Mode
+        // ========================================================
+
+        /** Utility: snap a world coordinate to the nearest grid step */
+        function snapToGrid(x, z, g = 0.5) {
+            return { x: Math.round(x / g) * g, z: Math.round(z / g) * g };
+        }
+
+        /** Convert a DOM drop/click event's pixel coords to 3D world position on y=0 plane */
+        function getDropWorldPosition(e) {
+            const rect = document.getElementById('canvas-view').getBoundingClientRect();
+            const ndcX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            const ndcY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            const ray = new THREE.Raycaster();
+            ray.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+            const target = new THREE.Vector3();
+            return ray.ray.intersectPlane(groundPlane, target) ? target : null;
+        }
+
+        /** Factory: instantiate any component by type, place it in the scene */
+        function createComponent(type, variant, x, z) {
+            const key = variant ? `${type}_${variant}` : type;
+            componentCounters[key] = (componentCounters[key] || 0) + 1;
+            const instanceId = `${key}_${componentCounters[key]}`;
+
+            let group;
+            switch (type) {
+                case 'arduino':    group = buildArduinoBoard(x, z); break;
+                case 'esp32':      group = buildESP32(x, z); break;
+                case 'breadboard': group = buildBreadboard(x, z); break;
+                case 'led':        group = buildLED(x, z, variant || 'red'); break;
+                case 'buzzer':     group = buildPiezoBuzzer(x, z); break;
+                case 'button':     group = buildButton(x, z); break;
+                case 'ldr':        group = buildLDR(x, z); break;
+                case 'resistor':   group = buildResistor(x, z, variant || '220'); break;
+                default: return null;
+            }
+
+            group.userData = { instanceId, type, variant: variant || null, isFreePlaced: true };
+            scene.add(group);
+            placedComponents.push(group);
+            return group;
+        }
+
+        /** Fired on dragstart of a part card */
+        function onPartDragStart(e) {
+            const card = e.currentTarget;
+            draggedPartData = {
+                type: card.dataset.partType,
+                variant: card.dataset.partVariant || null
+            };
+            e.dataTransfer.effectAllowed = 'copy';
+            card.classList.add('dragging');
+            setTimeout(() => card.classList.remove('dragging'), 0);
+        }
+
+        /** Click on canvas: select hit component, deselect if empty */
+        function onCanvasClick(e) {
+            if (!isFreeBuildMode) return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            const ray = new THREE.Raycaster();
+            ray.setFromCamera(new THREE.Vector2(
+                ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                -((e.clientY - rect.top) / rect.height) * 2 + 1
+            ), camera);
+
+            const allMeshes = [];
+            placedComponents.forEach(g => g.traverse(c => { if (c.isMesh) allMeshes.push(c); }));
+
+            const hits = ray.intersectObjects(allMeshes, false);
+            if (hits.length > 0) {
+                let obj = hits[0].object;
+                while (obj.parent && !obj.userData.isFreePlaced) obj = obj.parent;
+                if (obj.userData.isFreePlaced) { selectComponent(obj); return; }
+            }
+            deselectComponent();
+        }
+
+        /** Highlight a free-placed component */
+        function selectComponent(group) {
+            deselectComponent();
+            selectedComponent = group;
+            group.traverse(c => {
+                if (c.isMesh && c.material && c.material.emissive) {
+                    c.userData._origEmissive = c.material.emissive.getHex();
+                    c.userData._origEmissiveIntensity = c.material.emissiveIntensity || 0;
+                    c.material.emissive.setHex(0x334155);
+                    c.material.emissiveIntensity = 0.45;
+                }
+            });
+            refreshPlacedList();
+        }
+
+        /** Remove highlight from currently selected component */
+        function deselectComponent() {
+            if (!selectedComponent) return;
+            selectedComponent.traverse(c => {
+                if (c.isMesh && c.material && c.userData._origEmissive !== undefined) {
+                    c.material.emissive.setHex(c.userData._origEmissive);
+                    c.material.emissiveIntensity = c.userData._origEmissiveIntensity;
+                }
+            });
+            selectedComponent = null;
+            refreshPlacedList();
+        }
+
+        /** Remove the currently selected free-placed component */
+        function deleteSelectedComponent() {
+            if (!selectedComponent) return;
+            scene.remove(selectedComponent);
+            placedComponents.splice(placedComponents.indexOf(selectedComponent), 1);
+            selectedComponent = null;
+            refreshPlacedList();
+        }
+
+        /** Remove a free-placed component by its unique instanceId */
+        function deleteComponentById(instanceId) {
+            const g = placedComponents.find(g => g.userData.instanceId === instanceId);
+            if (!g) return;
+            if (g === selectedComponent) selectedComponent = null;
+            scene.remove(g);
+            placedComponents.splice(placedComponents.indexOf(g), 1);
+            refreshPlacedList();
+        }
+
+        /** Switch between AI Copilot and Parts Library tabs */
+        function switchTab(tabName) {
+            activeTab = tabName;
+            const showParts = tabName === 'parts';
+            document.getElementById('panel-copilot').classList.toggle('hidden', showParts);
+            document.getElementById('panel-parts').classList.toggle('hidden', !showParts);
+
+            ['copilot', 'parts'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const active = t === tabName;
+                btn.classList.toggle('border-indigo-600', active);
+                btn.classList.toggle('text-indigo-700', active);
+                btn.classList.toggle('bg-indigo-50', active);
+                btn.classList.toggle('border-transparent', !active);
+                btn.classList.toggle('text-slate-500', !active);
+            });
+
+            if (showParts) {
+                enterFreeBuildMode();
+            } else {
+                enterPresetMode();
+            }
+        }
+
+        /** Activate free-build sandbox: hide preset components, show placed ones */
+        function enterFreeBuildMode() {
+            isFreeBuildMode = true;
+            Object.values(customMeshes).forEach(m => { if (m) m.visible = false; });
+            activeWireMeshes.forEach(w => { w.visible = false; });
+            placedComponents.forEach(g => { g.visible = true; });
+            if (isSimulating) toggleSimulation();
+            glideCamera({ x: 0, y: 15, z: 8 }, { x: 0, y: 0, z: 0 });
+        }
+
+        /** Return to guided preset mode: hide free-placed, restore preset visibility */
+        function enterPresetMode() {
+            isFreeBuildMode = false;
+            placedComponents.forEach(g => { g.visible = false; });
+            deselectComponent();
+            updateComponentVisibilities();
+        }
+
+        /** Build part card UI — called once on load */
+        function buildPartsLibraryUI() {
+            PARTS_REGISTRY.forEach(part => {
+                const container = document.getElementById(`cat-${part.category}`);
+                if (!container) return;
+
+                const card = document.createElement('div');
+                card.className = [
+                    'part-card', 'group', 'flex', 'flex-col', 'items-center', 'justify-center',
+                    'gap-1.5', 'p-3', 'bg-white', 'border', 'border-slate-200', 'rounded-xl',
+                    'cursor-grab', 'hover:border-indigo-300', 'hover:shadow-md',
+                    'hover:shadow-indigo-100', 'active:cursor-grabbing', 'active:scale-95',
+                    'transition-all', 'duration-150', 'select-none'
+                ].join(' ');
+
+                card.draggable = true;
+                card.dataset.partType = part.type;
+                card.dataset.partVariant = part.variant || '';
+
+                card.innerHTML = `
+                    <div class="w-8 h-8 ${part.bg} ${part.color} rounded-lg flex items-center justify-center shrink-0">
+                        <i class="fa-solid ${part.icon} text-sm"></i>
+                    </div>
+                    <span class="text-[10px] font-semibold text-slate-600 text-center leading-tight">${part.label}</span>
+                `;
+                card.addEventListener('dragstart', onPartDragStart);
+                container.appendChild(card);
+            });
+        }
+
+        /** Filter part cards by search query */
+        function filterParts(query) {
+            const q = query.toLowerCase();
+            document.querySelectorAll('.part-card').forEach(card => {
+                const label = card.querySelector('span');
+                card.style.display = (label && label.textContent.toLowerCase().includes(q)) ? '' : 'none';
+            });
+        }
+
+        /** Re-render the Placed Components list in the sidebar */
+        function refreshPlacedList() {
+            const list = document.getElementById('placed-list');
+            const section = document.getElementById('placed-list-section');
+            const countEl = document.getElementById('placed-count');
+            if (!list || !section || !countEl) return;
+
+            countEl.textContent = placedComponents.length;
+            list.innerHTML = '';
+            section.classList.toggle('hidden', placedComponents.length === 0);
+
+            placedComponents.forEach(g => {
+                const row = document.createElement('div');
+                const sel = g === selectedComponent;
+                row.className = [
+                    'flex', 'items-center', 'justify-between', 'px-2.5', 'py-1.5',
+                    'rounded-lg', 'text-xs', 'cursor-pointer', 'transition-all',
+                    sel ? 'bg-indigo-50 border border-indigo-200 text-indigo-700'
+                        : 'bg-slate-50 border border-slate-100 text-slate-600 hover:bg-slate-100'
+                ].join(' ');
+
+                const label = g.userData.variant
+                    ? `${g.userData.type} (${g.userData.variant})`
+                    : g.userData.type;
+
+                const iid = g.userData.instanceId;
+                row.innerHTML = `
+                    <span class="font-medium truncate capitalize">${label}</span>
+                    <button onclick="event.stopPropagation();deleteComponentById('${iid}')"
+                        class="p-1 hover:bg-red-50 hover:text-red-500 rounded text-slate-400 transition shrink-0">
+                        <i class="fa-solid fa-trash-can text-[10px]"></i>
+                    </button>
+                `;
+                row.addEventListener('click', () => selectComponent(g));
+                list.appendChild(row);
+            });
+        }
+
         // Entry point
         window.onload = () => {
             initPanels();
             initGraphics();
             applyPreset("blink");
+            buildPartsLibraryUI();
         };
     </script>
 </body>
