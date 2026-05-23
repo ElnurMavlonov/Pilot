@@ -3,7 +3,9 @@
     "allow": [
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\user\\\\Documents\\\\Pilot\\\\Pilot\" -Force)",
       "Bash(Select-Object -Property Name, PSIsContainer)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const html=fs.readFileSync\\('index.html','utf8'\\);console.log\\('Lines:',html.split\\('\\\\n'\\).length\\);console.log\\('Has undoStack:',html.includes\\('let undoStack'\\)\\);console.log\\('Has saveUndoSnapshot:',html.includes\\('function saveUndoSnapshot'\\)\\);console.log\\('Has restoreSnapshot:',html.includes\\('function restoreSnapshot'\\)\\);console.log\\('Has undo\\(\\):',html.includes\\('function undo\\(\\)'\\)\\);console.log\\('Has redo\\(\\):',html.includes\\('function redo\\(\\)'\\)\\);console.log\\('Has btn-undo:',html.includes\\('btn-undo'\\)\\);console.log\\('TODO undo checked:',html.includes\\('[x] **Undo / Redo**'\\)\\);\")",
+      "Bash(node -e ' *)"
     ]
   }
 }
