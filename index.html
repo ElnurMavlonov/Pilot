@@ -1122,6 +1122,12 @@ void loop() {
         let activeTab = 'copilot';
         let isFreeBuildMode = false;
 
+        // Drag-to-move state (moving placed components in 3D)
+        let dragComponent  = null;   // THREE.Group being dragged
+        let dragHasMoved   = false;  // true once pointer moves past threshold
+        let pointerDownPos = { x: 0, y: 0 };
+        const DRAG_PX_THRESHOLD = 5; // pixels before a press becomes a drag
+
         // ========================================================
         // GEMINI AI INTEGRATION (30 Points Technical Metric)
         // ========================================================
@@ -1449,8 +1455,10 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 draggedPartData = null;
             });
 
-            // Click to select placed components
-            renderer.domElement.addEventListener('click', onCanvasClick);
+            // Drag-to-move + click-to-select on placed components
+            renderer.domElement.addEventListener('pointerdown',  onCanvasPointerDown);
+            renderer.domElement.addEventListener('pointermove',  onCanvasPointerMove);
+            renderer.domElement.addEventListener('pointerup',    onCanvasPointerUp);
 
             // Right-click context menu on placed components
             renderer.domElement.addEventListener('contextmenu', onCanvasRightClick);
@@ -1954,25 +1962,91 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         }
 
         /** Click on canvas: select hit component, deselect if empty */
-        function onCanvasClick(e) {
-            if (!isFreeBuildMode) return;
+        /** Shared raycaster: find the free-placed group under a pointer event, or null */
+        function raycastPlacedComponents(e) {
+            if (!placedComponents.length) return null;
             const rect = renderer.domElement.getBoundingClientRect();
             const ray = new THREE.Raycaster();
             ray.setFromCamera(new THREE.Vector2(
                 ((e.clientX - rect.left) / rect.width) * 2 - 1,
                 -((e.clientY - rect.top) / rect.height) * 2 + 1
             ), camera);
-
             const allMeshes = [];
             placedComponents.forEach(g => g.traverse(c => { if (c.isMesh) allMeshes.push(c); }));
-
             const hits = ray.intersectObjects(allMeshes, false);
-            if (hits.length > 0) {
-                let obj = hits[0].object;
-                while (obj.parent && !obj.userData.isFreePlaced) obj = obj.parent;
-                if (obj.userData.isFreePlaced) { selectComponent(obj); return; }
+            if (!hits.length) return null;
+            let obj = hits[0].object;
+            while (obj.parent && !obj.userData.isFreePlaced) obj = obj.parent;
+            return obj.userData.isFreePlaced ? obj : null;
+        }
+
+        /** pointerdown — grab a component to drag, or let OrbitControls handle it */
+        function onCanvasPointerDown(e) {
+            if (!isFreeBuildMode || e.button !== 0) return;
+            closeCtxMenu();
+            const hit = raycastPlacedComponents(e);
+            if (!hit) return;                       // nothing hit → OrbitControls takes over
+
+            e.stopPropagation();                    // prevent OrbitControls from also starting
+            renderer.domElement.setPointerCapture(e.pointerId);
+            dragComponent  = hit;
+            dragHasMoved   = false;
+            pointerDownPos = { x: e.clientX, y: e.clientY };
+            controls.enabled = false;               // disable orbit while dragging
+        }
+
+        /** pointermove — move the grabbed component, or update hover cursor */
+        function onCanvasPointerMove(e) {
+            if (dragComponent) {
+                const dx = e.clientX - pointerDownPos.x;
+                const dz = e.clientY - pointerDownPos.y;
+                if (!dragHasMoved && (dx * dx + dz * dz) > DRAG_PX_THRESHOLD * DRAG_PX_THRESHOLD) {
+                    dragHasMoved = true;
+                    selectComponent(dragComponent);
+                    renderer.domElement.style.cursor = 'grabbing';
+                }
+                if (!dragHasMoved) return;
+
+                const pos = getDropWorldPosition(e);
+                if (pos) {
+                    dragComponent.position.x = pos.x;
+                    dragComponent.position.z = pos.z;
+                }
+                return;
             }
-            deselectComponent();
+
+            // Hover cursor — grab hand when over a movable part
+            if (!isFreeBuildMode) return;
+            renderer.domElement.style.cursor = raycastPlacedComponents(e) ? 'grab' : '';
+        }
+
+        /** pointerup — finalise drag (snap to grid) or treat as a click (select/deselect) */
+        function onCanvasPointerUp(e) {
+            if (e.button !== 0) return;
+
+            if (dragComponent) {
+                controls.enabled = true;
+                renderer.domElement.style.cursor = 'grab';
+
+                if (dragHasMoved) {
+                    // Snap to grid and update sidebar list
+                    const s = snapToGrid(dragComponent.position.x, dragComponent.position.z);
+                    dragComponent.position.x = s.x;
+                    dragComponent.position.z = s.z;
+                    refreshPlacedList();
+                } else {
+                    // Didn't actually move — treat as a plain click
+                    const already = selectedComponent === dragComponent;
+                    already ? deselectComponent() : selectComponent(dragComponent);
+                }
+
+                dragComponent = null;
+                dragHasMoved  = false;
+            } else if (isFreeBuildMode) {
+                // Clicked on empty canvas → deselect
+                const hit = raycastPlacedComponents(e);
+                hit ? selectComponent(hit) : deselectComponent();
+            }
         }
 
         /** Highlight a free-placed component */
@@ -2172,28 +2246,11 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             e.preventDefault();
             closeCtxMenu();
             if (!isFreeBuildMode) return;
-
-            const rect = renderer.domElement.getBoundingClientRect();
-            const ray = new THREE.Raycaster();
-            ray.setFromCamera(new THREE.Vector2(
-                ((e.clientX - rect.left) / rect.width) * 2 - 1,
-                -((e.clientY - rect.top) / rect.height) * 2 + 1
-            ), camera);
-
-            const allMeshes = [];
-            placedComponents.forEach(g => g.traverse(c => { if (c.isMesh) allMeshes.push(c); }));
-
-            const hits = ray.intersectObjects(allMeshes, false);
-            if (hits.length === 0) return;
-
-            // Walk up to root group
-            let obj = hits[0].object;
-            while (obj.parent && !obj.userData.isFreePlaced) obj = obj.parent;
-            if (!obj.userData.isFreePlaced) return;
-
-            ctxTarget = obj;
-            selectComponent(obj); // also highlight it
-            openCtxMenu(e.clientX, e.clientY, obj);
+            const hit = raycastPlacedComponents(e);
+            if (!hit) return;
+            ctxTarget = hit;
+            selectComponent(hit);
+            openCtxMenu(e.clientX, e.clientY, hit);
         }
 
         /** Position and populate the context menu */
