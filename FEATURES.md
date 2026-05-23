@@ -14,16 +14,17 @@ The 3D workspace is procedurally built at runtime using **Three.js r128** — no
 |-----------|-------------|
 | Arduino Uno | PCB board with USB port, power jack, MCU chip, and labelled pin headers |
 | Breadboard | White base with tie-point grid, red (+) and blue (−) power rails |
-| LED (Red) | Transparent dome cap, polarised pins, emissive light source |
+| LED (Red/Green/Blue) | 5 mm epoxy: translucent cylinder + dome, visible internal leads, flange, polarised pins, emissive glow |
 | Resistor (220 Ω) | Cylindrical body with Red-Red-Brown colour bands and metal leads |
-| Piezo Buzzer | Acoustic barrel with signal/ground pins |
-| Push Button | Dark base, skirt, red cap, and four corner pins (matches breadboard scale) |
+| Piezo Buzzer | 12 mm disc: dark body, recessed centre hole, top pin posts, through-hole leads |
+| Push Button | Dark base, grey collar, tapered red cap, four L-shaped legs bent down for breadboard |
 | LDR Sensor | Ceramic base, glass disc, zigzag photoresistor trace, through-hole pins |
 | DHT11 | Blue shell with vent grid, face plate, label strip, and 4-pin header |
 | HC-SR04 | Green PCB, dual metal transducers with mesh rings, IC, SMD pads, mounting holes |
 | PIR Motion Detector | PCB, sensitivity pot, stacked Fresnel rings, lens dome (motion glow) |
-| Servo Motor (SG90) | Two-part orange body, gear tower, cross horn, signal header, 3-pin header |
-| DC Motor + L298N | Driver PCB with dual chips, caps, heatsink fins, screw terminals, motor + shaft blades |
+| Servo Motor (SG90) | Tower Pro blue body, mounting ears, gold label, white cross horn with holes, 3-pin header |
+| L298N Driver | Red PCB, finned heatsink, L298N IC with tab, blue screw terminals, caps, diodes, logic header |
+| DC Motor | Cylindrical body, metal band, four-blade shaft, screw terminals (M+/M−) |
 | Relay Module | Driver PCB, blue relay coil, translucent cover, indicator LED, screw terminals |
 | Jumper Wires | Colour-coded paths: black (GND), red/yellow/indigo/pink (signal) |
 

@@ -14,13 +14,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Serial Monitor output for live sensor readings; emissive/visual feedback on placed sensor meshes
 
 ### Added — Actuators (Parts Library)
-- **Servo (SG90)**, **DC Motor + L298N**, and **Relay Module** in the Parts Library (Actuators category) with procedural Three.js meshes
+- **Servo (SG90)**, **L298N Driver**, **DC Motor**, and **Relay Module** in the Parts Library (Actuators category) with procedural Three.js meshes
 - Free-build sandbox simulation: servo angle slider, bipolar motor speed slider, relay energize hold button
 - Serial Monitor actuator output; horn rotation, motor shaft spin, driver/relay LED visuals
 
 ### Changed — 3D part detailing
 - Shared builders (`partMetalMat`, `partPcbMat`, `addThroughHolePins`, `addSmdPad`) for consistent scale with LEDs, resistors, and breadboard parts
-- Refined meshes for **LDR**, **push button**, **DHT11**, **HC-SR04** (dual transducers + IC/pads), **PIR** (Fresnel rings + lens), **SG90** (two-part body + cross horn), **L298N** (heatsink fins, screw terminals, motor band), and **relay** (coil, cover, indicator LED)
+- Refined meshes for **LDR**, **push button**, **DHT11**, **HC-SR04** (dual transducers + IC/pads), **PIR** (Fresnel rings + lens), **L298N** (heatsink fins, screw terminals, motor band), and **relay** (coil, cover, indicator LED)
+- **SG90** restyled to match Tower Pro reference: blue housing, side mounting tabs with screw, gold/silver front label, cross horn (6+2+2 holes) with center screw
+- **L298N** restyled to match module reference: dark-red PCB, corner mount rings, black finned heatsink, vertical IC with tab and legs, blue 2/3/2-pin terminals, silver caps, SMD diodes and logic header
+- **DC Motor** and **L298N Driver** split into separate Parts Library entries (was combined “DC Motor + L298N”)
+- **Breadboard-scale sizing** via `partU(mm)` and shared `PART_DIM` (13 mm/unit from real dimensions): all passives, sensors, actuators, and wire pins aligned; duplicate legacy builders removed
 - Visual simulation hooks preserved (`dhtBody`, `sonarEyeLeft`/`sonarEyeRight`, `pirDome`, `servoHorn`, `driverBoard`, `motorShaft`, `relayLed`)
 
 See [TODO.md](./TODO.md) for the full roadmap.

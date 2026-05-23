@@ -16,7 +16,7 @@
 
 - [x] **More passive components** — Capacitors (electrolytic + ceramic), potentiometers, thermistors, transistors (NPN/PNP)
 - [x] **Sensors** — DHT11 temperature & humidity, HC-SR04 ultrasonic distance, PIR motion detector
-- [x] **Actuators** — Servo motor, DC motor with L298N driver, relay module
+- [x] **Actuators** — Servo motor, L298N driver, DC motor, relay module
 - [ ] **Displays** — 16×2 LCD module (I²C), 7-segment display, OLED 128×64
 
 ---
