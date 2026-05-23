@@ -1355,7 +1355,6 @@ void loop() {
             { id:'buzzer',      label:'Piezo Buzzer',  icon:'fa-volume-high',   color:'text-amber-600',  bg:'bg-amber-50',    category:'actuators',        type:'buzzer' },
             { id:'button',      label:'Push Button',   icon:'fa-hand-pointer',  color:'text-pink-600',   bg:'bg-pink-50',     category:'sensors',          type:'button' },
             { id:'ldr',         label:'LDR Sensor',    icon:'fa-sun',           color:'text-yellow-600', bg:'bg-yellow-50',   category:'sensors',          type:'ldr' },
-<<<<<<< HEAD
             { id:'res_220',     label:'Resistor 220Ω',       icon:'fa-wave-square',   color:'text-purple-600',  bg:'bg-purple-50',   category:'passive',  type:'resistor',    variant:'220' },
             { id:'res_1k',      label:'Resistor 1kΩ',        icon:'fa-wave-square',   color:'text-violet-600',  bg:'bg-violet-50',   category:'passive',  type:'resistor',    variant:'1k' },
             { id:'res_10k',     label:'Resistor 10kΩ',       icon:'fa-wave-square',   color:'text-fuchsia-600', bg:'bg-fuchsia-50',  category:'passive',  type:'resistor',    variant:'10k' },
@@ -1365,17 +1364,6 @@ void loop() {
             { id:'thermistor',  label:'Thermistor (NTC)',     icon:'fa-temperature-half', color:'text-orange-600', bg:'bg-orange-50', category:'passive',  type:'thermistor' },
             { id:'transistor_npn', label:'Transistor (NPN)', icon:'fa-arrow-right-to-bracket', color:'text-emerald-700', bg:'bg-emerald-50', category:'passive', type:'transistor', variant:'NPN' },
             { id:'transistor_pnp', label:'Transistor (PNP)', icon:'fa-arrow-right-from-bracket', color:'text-teal-700', bg:'bg-teal-50', category:'passive', type:'transistor', variant:'PNP' },
-=======
-            { id:'res_220',     label:'Resistor 220Ω', icon:'fa-wave-square',   color:'text-purple-600', bg:'bg-purple-50',   category:'passive',          type:'resistor', variant:'220' },
-            { id:'res_1k',      label:'Resistor 1kΩ',  icon:'fa-wave-square',   color:'text-violet-600', bg:'bg-violet-50',   category:'passive',          type:'resistor', variant:'1k' },
-            { id:'res_10k',     label:'Resistor 10kΩ', icon:'fa-wave-square',   color:'text-fuchsia-600',bg:'bg-fuchsia-50',  category:'passive',          type:'resistor', variant:'10k' },
-            { id:'cap_e',       label:'Capacitor (E)', icon:'fa-bolt',          color:'text-cyan-600',   bg:'bg-cyan-50',     category:'passive',          type:'capacitor_electro' },
-            { id:'cap_c',       label:'Capacitor (C)', icon:'fa-bolt',          color:'text-teal-600',   bg:'bg-teal-50',     category:'passive',          type:'capacitor_ceramic' },
-            { id:'pot',         label:'Potentiometer', icon:'fa-sliders',       color:'text-emerald-600',bg:'bg-emerald-50',  category:'passive',          type:'potentiometer' },
-            { id:'therm',       label:'Thermistor',    icon:'fa-temperature-half', color:'text-rose-600',bg:'bg-rose-50',    category:'passive',          type:'thermistor' },
-            { id:'npn',         label:'NPN Transistor',icon:'fa-microchip',     color:'text-slate-600',  bg:'bg-slate-100',   category:'passive',          type:'transistor', variant:'npn' },
-            { id:'pnp',         label:'PNP Transistor',icon:'fa-microchip',     color:'text-slate-600',  bg:'bg-slate-100',   category:'passive',          type:'transistor', variant:'pnp' },
->>>>>>> 71d5a02ba0e16ba64b541e4370d46553aa35699f
         ];
 
         let activePreset = "blink";
@@ -2492,22 +2480,12 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 case 'led':        group = buildLED(x, z, variant || 'red'); break;
                 case 'buzzer':     group = buildPiezoBuzzer(x, z); break;
                 case 'button':     group = buildButton(x, z); break;
-<<<<<<< HEAD
                 case 'ldr':          group = buildLDR(x, z); break;
                 case 'resistor':     group = buildResistor(x, z, variant || '220'); break;
                 case 'capacitor':    group = buildCapacitor(x, z, variant || 'electrolytic'); break;
                 case 'potentiometer':group = buildPotentiometer(x, z); break;
                 case 'thermistor':   group = buildThermistor(x, z); break;
                 case 'transistor':   group = buildTransistor(x, z, variant || 'NPN'); break;
-=======
-                case 'ldr':        group = buildLDR(x, z); break;
-                case 'resistor':   group = buildResistor(x, z, variant || '220'); break;
-                case 'capacitor_electro': group = buildElectrolyticCapacitor(x, z); break;
-                case 'capacitor_ceramic': group = buildCeramicCapacitor(x, z); break;
-                case 'potentiometer': group = buildPotentiometer(x, z); break;
-                case 'thermistor': group = buildThermistor(x, z); break;
-                case 'transistor': group = buildTransistor(x, z, variant || 'npn'); break;
->>>>>>> 71d5a02ba0e16ba64b541e4370d46553aa35699f
                 default: return null;
             }
 
