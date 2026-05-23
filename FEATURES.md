@@ -19,6 +19,12 @@ The 3D workspace is procedurally built at runtime using **Three.js r128** — no
 | Piezo Buzzer | Acoustic barrel with signal/ground pins |
 | Push Button | Plastic casing with a spring-loaded red cap |
 | LDR Sensor | Ceramic disc with photoresistor trace and metal pins |
+| DHT11 | Blue housing with grille face and 4-pin header (temperature & humidity) |
+| HC-SR04 | Green PCB with dual ultrasonic transducers and 4-pin header |
+| PIR Motion Detector | PCB base with white Fresnel dome lens and 3-pin header |
+| Servo Motor (SG90) | Orange micro-servo body with white horn arm and 3-pin header |
+| DC Motor + L298N | Green motor driver PCB with heatsink, DC motor barrel, and spinning shaft |
+| Relay Module | Blue relay on driver board with status LED and 3-pin header |
 | Jumper Wires | Colour-coded paths: black (GND), red/yellow/indigo/pink (signal) |
 
 **Camera system:**

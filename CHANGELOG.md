@@ -8,6 +8,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — Sensors (Parts Library)
+- **DHT11**, **HC-SR04**, and **PIR** components in the Parts Library (Sensors category) with procedural Three.js meshes
+- Free-build sandbox simulation: temperature/humidity sliders, distance slider, and motion hold button when sensors are placed
+- Serial Monitor output for live sensor readings; emissive/visual feedback on placed sensor meshes
+
+### Added — Actuators (Parts Library)
+- **Servo (SG90)**, **DC Motor + L298N**, and **Relay Module** in the Parts Library (Actuators category) with procedural Three.js meshes
+- Free-build sandbox simulation: servo angle slider, bipolar motor speed slider, relay energize hold button
+- Serial Monitor actuator output; horn rotation, motor shaft spin, driver/relay LED visuals
+
 See [TODO.md](./TODO.md) for the full roadmap.
 
 ---
