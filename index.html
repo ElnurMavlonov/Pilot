@@ -235,6 +235,103 @@
             z-index: 100;
             background: rgba(15,23,42,0.72);
             backdrop-filter: blur(4px);
+
+        /* ── Community Library Modal ── */
+        #community-library-modal {
+            transition: opacity 0.3s ease;
+        }
+        #community-library-modal.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .community-tab {
+            position: relative;
+        }
+        .community-tab.active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+        }
+        .community-tab-content {
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .circuit-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .circuit-card:hover {
+            border-color: #4f46e5;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+            transform: translateY(-2px);
+        }
+        .circuit-card .card-header {
+            display: flex;
+            align-items: start;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .circuit-card .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+        .circuit-card .card-author {
+            font-size: 11px;
+            color: #64748b;
+        }
+        .circuit-card .card-description {
+            font-size: 12px;
+            color: #475569;
+            line-height: 1.5;
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .circuit-card .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 12px;
+            border-top: 1px solid #f1f5f9;
+        }
+        .circuit-card .card-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 11px;
+            color: #64748b;
+        }
+        .circuit-card .card-category {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 4px 8px;
+            background: #f1f5f9;
+            color: #475569;
+            border-radius: 6px;
+        }
+        .star-rating {
+            display: flex;
+            gap: 2px;
+        }
+        .star-rating i {
+            color: #fbbf24;
+            font-size: 12px;
+        }
+        .star-rating i.empty {
+            color: #e2e8f0;
+        }
+
+        /* ── Keyboard Shortcuts Overlay ── */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -462,6 +559,10 @@
                     <button onclick="applyPreset('button')" class="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 rounded-lg px-2.5 py-1 transition cursor-pointer">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><path d="M12 22V12"/><path d="m15 7-3-3-3 3"/><path d="M4 12h16"/></svg>
                         Push Trigger
+                    </button>
+                    <button onclick="openCommunityLibrary()" class="inline-flex items-center gap-1 text-[10px] bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-semibold">
+                        <i class="fa-solid fa-users"></i>
+                        Community Library
                     </button>
                 </div>
 
@@ -2503,6 +2604,405 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         }
 
         // ========================================================
+        // COMMUNITY PRESET LIBRARY
+        // ========================================================
+
+        // Initialize community circuits storage
+        function initCommunityLibrary() {
+            if (!localStorage.getItem('communityCircuits')) {
+                // Add some sample community circuits
+                const sampleCircuits = [
+                    {
+                        id: 'comm_001',
+                        title: 'Smart Plant Watering System',
+                        description: 'Automatically waters plants based on soil moisture levels using a sensor and relay-controlled pump.',
+                        author: 'GreenThumb_Dev',
+                        category: 'automation',
+                        tags: ['arduino', 'sensors', 'automation', 'plants'],
+                        rating: 4.5,
+                        downloads: 342,
+                        publishedDate: '2026-05-15',
+                        circuit: null // Would contain actual circuit data
+                    },
+                    {
+                        id: 'comm_002',
+                        title: 'RGB Mood Lamp',
+                        description: 'Color-changing LED lamp controlled by buttons. Cycles through rainbow colors with smooth transitions.',
+                        author: 'LightMaster',
+                        category: 'education',
+                        tags: ['led', 'rgb', 'beginner', 'lighting'],
+                        rating: 4.8,
+                        downloads: 567,
+                        publishedDate: '2026-05-18',
+                        circuit: null
+                    },
+                    {
+                        id: 'comm_003',
+                        title: 'Door Security Alarm',
+                        description: 'Triggers a buzzer alarm when a door is opened using a magnetic reed switch sensor.',
+                        author: 'SecureHome',
+                        category: 'iot',
+                        tags: ['security', 'buzzer', 'sensor', 'alarm'],
+                        rating: 4.3,
+                        downloads: 289,
+                        publishedDate: '2026-05-10',
+                        circuit: null
+                    },
+                    {
+                        id: 'comm_004',
+                        title: 'Temperature Monitor with Display',
+                        description: 'Displays real-time temperature readings on an LCD screen using a DHT11 sensor.',
+                        author: 'TempTracker',
+                        category: 'sensors',
+                        tags: ['temperature', 'lcd', 'dht11', 'monitoring'],
+                        rating: 4.6,
+                        downloads: 421,
+                        publishedDate: '2026-05-12',
+                        circuit: null
+                    },
+                    {
+                        id: 'comm_005',
+                        title: 'Line Following Robot',
+                        description: 'Simple robot that follows a black line using IR sensors and DC motors.',
+                        author: 'RoboBuilder',
+                        category: 'robotics',
+                        tags: ['robot', 'motors', 'sensors', 'autonomous'],
+                        rating: 4.7,
+                        downloads: 634,
+                        publishedDate: '2026-05-08',
+                        circuit: null
+                    },
+                    {
+                        id: 'comm_006',
+                        title: 'Traffic Light Simulator',
+                        description: 'Educational project simulating a 3-way traffic light system with proper timing sequences.',
+                        author: 'EduTech',
+                        category: 'education',
+                        tags: ['led', 'education', 'beginner', 'timing'],
+                        rating: 4.4,
+                        downloads: 512,
+                        publishedDate: '2026-05-20',
+                        circuit: null
+                    }
+                ];
+                localStorage.setItem('communityCircuits', JSON.stringify(sampleCircuits));
+            }
+        }
+
+        // Open community library modal
+        function openCommunityLibrary() {
+            initCommunityLibrary();
+            document.getElementById('community-library-modal').classList.add('open');
+            switchCommunityTab('browse');
+        }
+
+        // Close community library modal
+        function closeCommunityLibrary() {
+            document.getElementById('community-library-modal').classList.remove('open');
+        }
+
+        // Switch between tabs
+        function switchCommunityTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.community-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.community-tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(`${tabName}-tab-content`).classList.remove('hidden');
+
+            // Load content based on tab
+            if (tabName === 'browse') {
+                loadCommunityCircuits();
+            } else if (tabName === 'my-circuits') {
+                loadMyCircuits();
+            }
+        }
+
+        // Load and display community circuits
+        function loadCommunityCircuits() {
+            const circuits = JSON.parse(localStorage.getItem('communityCircuits') || '[]');
+            const grid = document.getElementById('community-circuits-grid');
+
+            if (circuits.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <i class="fa-solid fa-box-open text-slate-300 text-5xl mb-4"></i>
+                        <p class="text-slate-500 text-sm">No community circuits available yet</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = circuits.map(circuit => createCircuitCard(circuit)).join('');
+        }
+
+        // Create circuit card HTML
+        function createCircuitCard(circuit) {
+            const stars = generateStarRating(circuit.rating);
+            const categoryColors = {
+                education: 'bg-blue-100 text-blue-700',
+                sensors: 'bg-green-100 text-green-700',
+                automation: 'bg-purple-100 text-purple-700',
+                iot: 'bg-orange-100 text-orange-700',
+                robotics: 'bg-red-100 text-red-700'
+            };
+            const categoryClass = categoryColors[circuit.category] || 'bg-slate-100 text-slate-700';
+
+            return `
+                <div class="circuit-card" onclick="viewCircuitDetails('${circuit.id}')">
+                    <div class="card-header">
+                        <div class="flex-1">
+                            <h3 class="card-title">${circuit.title}</h3>
+                            <p class="card-author">by ${circuit.author}</p>
+                        </div>
+                        <span class="card-category ${categoryClass}">${circuit.category}</span>
+                    </div>
+                    <p class="card-description">${circuit.description}</p>
+                    <div class="card-footer">
+                        <div class="card-stats">
+                            <span><i class="fa-solid fa-download"></i> ${circuit.downloads}</span>
+                            <span class="star-rating">${stars}</span>
+                        </div>
+                        <button onclick="event.stopPropagation(); loadCommunityCircuit('${circuit.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition">
+                            Load
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Generate star rating HTML
+        function generateStarRating(rating) {
+            const fullStars = Math.floor(rating);
+            const hasHalfStar = rating % 1 >= 0.5;
+            let stars = '';
+
+            for (let i = 0; i < fullStars; i++) {
+                stars += '<i class="fa-solid fa-star"></i>';
+            }
+            if (hasHalfStar) {
+                stars += '<i class="fa-solid fa-star-half-alt"></i>';
+            }
+            const emptyStars = 5 - Math.ceil(rating);
+            for (let i = 0; i < emptyStars; i++) {
+                stars += '<i class="fa-solid fa-star empty"></i>';
+            }
+
+            return stars;
+        }
+
+        // Filter community circuits
+        function filterCommunityCircuits() {
+            const category = document.getElementById('filter-category').value;
+            const sortBy = document.getElementById('filter-sort').value;
+            const searchTerm = document.getElementById('search-circuits').value.toLowerCase();
+
+            let circuits = JSON.parse(localStorage.getItem('communityCircuits') || '[]');
+
+            // Filter by category
+            if (category !== 'all') {
+                circuits = circuits.filter(c => c.category === category);
+            }
+
+            // Filter by search term
+            if (searchTerm) {
+                circuits = circuits.filter(c =>
+                    c.title.toLowerCase().includes(searchTerm) ||
+                    c.description.toLowerCase().includes(searchTerm) ||
+                    c.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            // Sort circuits
+            if (sortBy === 'popular') {
+                circuits.sort((a, b) => b.downloads - a.downloads);
+            } else if (sortBy === 'rating') {
+                circuits.sort((a, b) => b.rating - a.rating);
+            } else {
+                circuits.sort((a, b) => new Date(b.publishedDate) - new Date(a.publishedDate));
+            }
+
+            // Display filtered circuits
+            const grid = document.getElementById('community-circuits-grid');
+            if (circuits.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <i class="fa-solid fa-search text-slate-300 text-5xl mb-4"></i>
+                        <p class="text-slate-500 text-sm">No circuits found matching your criteria</p>
+                    </div>
+                `;
+            } else {
+                grid.innerHTML = circuits.map(circuit => createCircuitCard(circuit)).join('');
+            }
+        }
+
+        // View circuit details (could open a detailed modal)
+        function viewCircuitDetails(circuitId) {
+            const circuits = JSON.parse(localStorage.getItem('communityCircuits') || '[]');
+            const circuit = circuits.find(c => c.id === circuitId);
+            if (circuit) {
+                alert(`Circuit: ${circuit.title}\n\nDescription: ${circuit.description}\n\nAuthor: ${circuit.author}\nRating: ${circuit.rating}/5\nDownloads: ${circuit.downloads}\n\nTags: ${circuit.tags.join(', ')}`);
+            }
+        }
+
+        // Load a community circuit into the workspace
+        function loadCommunityCircuit(circuitId) {
+            const circuits = JSON.parse(localStorage.getItem('communityCircuits') || '[]');
+            const circuit = circuits.find(c => c.id === circuitId);
+
+            if (circuit) {
+                // Increment download count
+                circuit.downloads++;
+                localStorage.setItem('communityCircuits', JSON.stringify(circuits));
+
+                // Show success message
+                alert(`Loading "${circuit.title}" by ${circuit.author}\n\nNote: This is a demo. In a full implementation, the circuit configuration would be loaded into the workspace.`);
+
+                // In a real implementation, you would load the circuit data here
+                // For now, we'll just close the modal
+                closeCommunityLibrary();
+            }
+        }
+
+        // Publish current circuit to community
+        function publishCircuit(event) {
+            event.preventDefault();
+
+            const title = document.getElementById('publish-title').value;
+            const description = document.getElementById('publish-description').value;
+            const category = document.getElementById('publish-category').value;
+            const tags = document.getElementById('publish-tags').value.split(',').map(t => t.trim()).filter(t => t);
+            const author = document.getElementById('publish-author').value;
+
+            // Create new circuit object
+            const newCircuit = {
+                id: 'comm_' + Date.now(),
+                title,
+                description,
+                author,
+                category,
+                tags,
+                rating: 0,
+                downloads: 0,
+                publishedDate: new Date().toISOString().split('T')[0],
+                circuit: getCurrentCircuitData() // Would capture current workspace state
+            };
+
+            // Add to community circuits
+            const circuits = JSON.parse(localStorage.getItem('communityCircuits') || '[]');
+            circuits.unshift(newCircuit);
+            localStorage.setItem('communityCircuits', JSON.stringify(circuits));
+
+            // Add to user's circuits
+            const myCircuits = JSON.parse(localStorage.getItem('myCircuits') || '[]');
+            myCircuits.unshift(newCircuit);
+            localStorage.setItem('myCircuits', JSON.stringify(myCircuits));
+
+            // Reset form
+            document.getElementById('publish-form').reset();
+
+            // Show success message
+            alert(`Success! Your circuit "${title}" has been published to the community library.`);
+
+            // Switch to browse tab to see the new circuit
+            switchCommunityTab('browse');
+        }
+
+        // Get current circuit data (placeholder)
+        function getCurrentCircuitData() {
+            // In a real implementation, this would capture:
+            // - All placed components
+            // - Wire connections
+            // - Current firmware code
+            // - Circuit configuration
+            return {
+                components: [],
+                wires: [],
+                code: document.getElementById('code-editor')?.value || '',
+                timestamp: Date.now()
+            };
+        }
+
+        // Load user's published circuits
+        function loadMyCircuits() {
+            const myCircuits = JSON.parse(localStorage.getItem('myCircuits') || '[]');
+            const grid = document.getElementById('my-circuits-grid');
+            const emptyState = document.getElementById('my-circuits-empty');
+
+            if (myCircuits.length === 0) {
+                grid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            } else {
+                grid.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                grid.innerHTML = myCircuits.map(circuit => createMyCircuitCard(circuit)).join('');
+            }
+        }
+
+        // Create user's circuit card with edit/delete options
+        function createMyCircuitCard(circuit) {
+            const stars = generateStarRating(circuit.rating);
+            const categoryColors = {
+                education: 'bg-blue-100 text-blue-700',
+                sensors: 'bg-green-100 text-green-700',
+                automation: 'bg-purple-100 text-purple-700',
+                iot: 'bg-orange-100 text-orange-700',
+                robotics: 'bg-red-100 text-red-700'
+            };
+            const categoryClass = categoryColors[circuit.category] || 'bg-slate-100 text-slate-700';
+
+            return `
+                <div class="circuit-card">
+                    <div class="card-header">
+                        <div class="flex-1">
+                            <h3 class="card-title">${circuit.title}</h3>
+                            <p class="card-author">by ${circuit.author}</p>
+                        </div>
+                        <span class="card-category ${categoryClass}">${circuit.category}</span>
+                    </div>
+                    <p class="card-description">${circuit.description}</p>
+                    <div class="card-footer">
+                        <div class="card-stats">
+                            <span><i class="fa-solid fa-download"></i> ${circuit.downloads}</span>
+                            <span class="star-rating">${stars}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="deleteMyCircuit('${circuit.id}')" class="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-lg transition" title="Delete">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                            <button onclick="loadCommunityCircuit('${circuit.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition">
+                                Load
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Delete user's circuit
+        function deleteMyCircuit(circuitId) {
+            if (!confirm('Are you sure you want to delete this circuit?')) return;
+
+            // Remove from my circuits
+            let myCircuits = JSON.parse(localStorage.getItem('myCircuits') || '[]');
+            myCircuits = myCircuits.filter(c => c.id !== circuitId);
+            localStorage.setItem('myCircuits', JSON.stringify(myCircuits));
+
+            // Remove from community circuits
+            let communityCircuits = JSON.parse(localStorage.getItem('communityCircuits') || '[]');
+            communityCircuits = communityCircuits.filter(c => c.id !== circuitId);
+            localStorage.setItem('communityCircuits', JSON.stringify(communityCircuits));
+
+            // Reload the view
+            loadMyCircuits();
+        }
+
+        // ========================================================
         // BUZZER AUDIO (Web Audio API)
         // ========================================================
         let audioCtx = null;
@@ -2693,6 +3193,143 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-3">Firmware IDE</p>
             <div class="shortcut-row"><span class="sh-label">Copy Code</span><span class="sh-keys"><kbd class="sh-key">Ctrl</kbd><kbd class="sh-key">C</kbd></span></div>
             <div class="shortcut-row"><span class="sh-label">Run Custom Code</span><span class="sh-keys"><kbd class="sh-key">Run</kbd> button</span></div>
+        </div>
+    </div>
+
+    <!-- ── Community Library Modal ── -->
+    <div id="community-library-modal" class="fixed inset-0 z-100 bg-slate-900/75 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300" onclick="if(event.target===this)closeCommunityLibrary()">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+                <!-- Header -->
+                <div class="flex items-center justify-between p-6 border-b border-slate-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                            <i class="fa-solid fa-users text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900">Community Preset Library</h2>
+                            <p class="text-xs text-slate-500">Browse and share circuits with the community</p>
+                        </div>
+                    </div>
+                    <button onclick="closeCommunityLibrary()" class="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-700 transition cursor-pointer">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex border-b border-slate-200 px-6">
+                    <button onclick="switchCommunityTab('browse')" id="tab-browse" class="community-tab active px-4 py-3 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 transition cursor-pointer">
+                        <i class="fa-solid fa-compass mr-2"></i>Browse
+                    </button>
+                    <button onclick="switchCommunityTab('publish')" id="tab-publish" class="community-tab px-4 py-3 text-sm font-semibold text-slate-500 hover:text-slate-700 border-b-2 border-transparent transition cursor-pointer">
+                        <i class="fa-solid fa-upload mr-2"></i>Publish
+                    </button>
+                    <button onclick="switchCommunityTab('my-circuits')" id="tab-my-circuits" class="community-tab px-4 py-3 text-sm font-semibold text-slate-500 hover:text-slate-700 border-b-2 border-transparent transition cursor-pointer">
+                        <i class="fa-solid fa-user mr-2"></i>My Circuits
+                    </button>
+                </div>
+
+                <!-- Content Area -->
+                <div class="flex-1 overflow-y-auto p-6">
+                    <!-- Browse Tab -->
+                    <div id="browse-tab-content" class="community-tab-content">
+                        <!-- Filters -->
+                        <div class="flex flex-wrap gap-3 mb-6">
+                            <select id="filter-category" onchange="filterCommunityCircuits()" class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                                <option value="all">All Categories</option>
+                                <option value="education">Education</option>
+                                <option value="sensors">Sensors</option>
+                                <option value="automation">Automation</option>
+                                <option value="iot">IoT Projects</option>
+                                <option value="robotics">Robotics</option>
+                            </select>
+                            <select id="filter-sort" onchange="filterCommunityCircuits()" class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                                <option value="recent">Most Recent</option>
+                                <option value="popular">Most Popular</option>
+                                <option value="rating">Highest Rated</option>
+                            </select>
+                            <input id="search-circuits" type="text" placeholder="Search circuits..." oninput="filterCommunityCircuits()" class="flex-1 min-w-[200px] px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500">
+                        </div>
+
+                        <!-- Circuit Grid -->
+                        <div id="community-circuits-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Circuits will be dynamically loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Publish Tab -->
+                    <div id="publish-tab-content" class="community-tab-content hidden">
+                        <div class="max-w-2xl mx-auto">
+                            <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6">
+                                <div class="flex items-start gap-3">
+                                    <i class="fa-solid fa-info-circle text-indigo-600 text-lg mt-0.5"></i>
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-indigo-900 mb-1">Share Your Circuit</h3>
+                                        <p class="text-xs text-indigo-700 leading-relaxed">Publish your current circuit configuration to the community library. Other users will be able to browse, learn from, and use your design.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <form id="publish-form" onsubmit="publishCircuit(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Circuit Title *</label>
+                                    <input type="text" id="publish-title" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-indigo-500" placeholder="e.g., Temperature-Controlled Fan System">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Description *</label>
+                                    <textarea id="publish-description" required rows="4" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-indigo-500 resize-none" placeholder="Describe what your circuit does and how it works..."></textarea>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Category *</label>
+                                    <select id="publish-category" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                                        <option value="">Select a category</option>
+                                        <option value="education">Education</option>
+                                        <option value="sensors">Sensors</option>
+                                        <option value="automation">Automation</option>
+                                        <option value="iot">IoT Projects</option>
+                                        <option value="robotics">Robotics</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Tags (comma-separated)</label>
+                                    <input type="text" id="publish-tags" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-indigo-500" placeholder="e.g., arduino, led, beginner">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Author Name *</label>
+                                    <input type="text" id="publish-author" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-indigo-500" placeholder="Your name or username">
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <input type="checkbox" id="publish-terms" required class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer">
+                                    <label for="publish-terms" class="text-xs text-slate-600">I agree to share this circuit under the MIT License and confirm it's my original work</label>
+                                </div>
+
+                                <button type="submit" class="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold py-3 rounded-xl transition cursor-pointer">
+                                    <i class="fa-solid fa-cloud-upload-alt mr-2"></i>Publish to Community
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- My Circuits Tab -->
+                    <div id="my-circuits-tab-content" class="community-tab-content hidden">
+                        <div id="my-circuits-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- User's published circuits will be shown here -->
+                        </div>
+                        <div id="my-circuits-empty" class="hidden text-center py-12">
+                            <i class="fa-solid fa-folder-open text-slate-300 text-5xl mb-4"></i>
+                            <p class="text-slate-500 text-sm">You haven't published any circuits yet</p>
+                            <button onclick="switchCommunityTab('publish')" class="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition cursor-pointer">
+                                Publish Your First Circuit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </body>

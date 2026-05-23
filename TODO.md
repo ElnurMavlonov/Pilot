@@ -56,7 +56,7 @@
 
 ## Community & Education
 
-- [ ] **Community Preset Library** — Let users publish and browse community-contributed circuits (backend required)
+- [x] **Community Preset Library** — Let users publish and browse community-contributed circuits (backend required)
 - [ ] **AI Circuit Debugger** — Ask Gemini _"Why isn't my LED turning on?"_ and get a diagnosis based on the current circuit state
 - [ ] **Teacher Mode** — Create ordered lesson sequences with custom step content, locked navigation, and assessments
 - [ ] **Progress Tracking** — Badge system: complete N labs to earn achievement badges, shown in a profile panel
