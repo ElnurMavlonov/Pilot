@@ -499,6 +499,16 @@
         body.dark .tour-dot.active { background: #818cf8; }
         body.dark #tour-skip-btn { color: #64748b; }
         body.dark #tour-skip-btn:hover { color: #94a3b8; }
+
+        /* ── Oscilloscope Panel ── */
+        #osc-canvas {
+            display: block;
+            image-rendering: pixelated;
+        }
+        body.dark #panel-scope .bg-slate-50 { background: #0f172a !important; }
+        body.dark #panel-scope .border-slate-100 { border-color: #1e293b !important; }
+        body.dark #osc-signal-label,
+        body.dark #osc-freq-label { color: #475569 !important; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen overflow-hidden flex flex-col md:flex-row grid-bg">
@@ -850,6 +860,10 @@
                 class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-all">
                 <i class="fa-solid fa-terminal"></i> Serial
             </button>
+            <button id="tab-scope" onclick="switchTab('scope')"
+                class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-all">
+                <i class="fa-solid fa-wave-square"></i> Scope
+            </button>
         </div>
 
         <!-- ── Parts Library Panel ── -->
@@ -974,6 +988,34 @@
                 <p class="text-[10px] text-slate-400 font-medium">Run a simulation to see output</p>
             </div>
         </div><!-- end #panel-serial -->
+
+        <!-- ── Oscilloscope Panel ── -->
+        <div id="panel-scope" class="hidden flex-col flex-1 overflow-hidden">
+            <!-- Toolbar -->
+            <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" id="scope-status-dot"></span>
+                    <span class="text-[10px] code-font font-semibold text-slate-600">Oscilloscope — 100 ms/div</span>
+                </div>
+                <button onclick="clearOscilloscope()" class="flex items-center gap-1 text-[10px] font-semibold text-slate-500 hover:text-red-600 bg-white hover:bg-red-50 border border-slate-200 px-2.5 py-1 rounded-lg transition cursor-pointer">
+                    <i class="fa-solid fa-trash-can"></i> Clear
+                </button>
+            </div>
+            <!-- Canvas area -->
+            <div class="flex-1 bg-slate-950 relative overflow-hidden">
+                <canvas id="osc-canvas" class="absolute inset-0 w-full h-full"></canvas>
+                <!-- Idle overlay -->
+                <div id="osc-idle" class="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none">
+                    <i class="fa-solid fa-wave-square text-slate-700 text-2xl"></i>
+                    <p class="text-[11px] text-slate-600 font-medium code-font">Run a simulation to see waveform</p>
+                </div>
+            </div>
+            <!-- Footer: live readout -->
+            <div class="px-4 py-2 border-t border-slate-100 bg-slate-50 shrink-0 flex items-center justify-between">
+                <span class="text-[10px] code-font text-slate-500" id="osc-signal-label">Signal: —</span>
+                <span class="text-[10px] code-font text-slate-500" id="osc-freq-label">—</span>
+            </div>
+        </div><!-- end #panel-scope -->
 
     </aside>
 
@@ -2416,6 +2458,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 btn.className = "flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-300 px-4 py-3.5 rounded-2xl font-semibold text-sm shadow-xl shadow-emerald-900/10 cursor-pointer";
 
                 clearInterval(simInterval);
+                stopOscilloscope();
                 resetAllComponentOutputs();
                 stopBuzzerTone();
             } else {
@@ -2424,6 +2467,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 btn.className = "flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white transition-all duration-300 px-4 py-3.5 rounded-2xl font-semibold text-sm shadow-xl shadow-amber-900/10 cursor-pointer";
 
                 runSimulationInterval();
+                startOscilloscope();
             }
         }
 
@@ -2732,7 +2776,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         function switchTab(tabName) {
             activeTab = tabName;
 
-            const panels = { parts: 'panel-parts', ide: 'panel-ide', serial: 'panel-serial' };
+            const panels = { parts: 'panel-parts', ide: 'panel-ide', serial: 'panel-serial', scope: 'panel-scope' };
             Object.entries(panels).forEach(([key, id]) => {
                 const el = document.getElementById(id);
                 if (!el) return;
@@ -2753,6 +2797,10 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 iconEl.innerHTML       = '<i class="fa-solid fa-code text-sm"></i>';
                 titleEl.textContent    = 'Firmware IDE';
                 subtitleEl.textContent = 'Arduino C++';
+            } else if (tabName === 'scope') {
+                iconEl.innerHTML       = '<i class="fa-solid fa-wave-square text-sm"></i>';
+                titleEl.textContent    = 'Oscilloscope';
+                subtitleEl.textContent = '100 ms/div';
             } else {
                 iconEl.innerHTML       = '<i class="fa-solid fa-terminal text-sm"></i>';
                 titleEl.textContent    = 'Serial Monitor';
@@ -2760,7 +2808,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             }
 
             // Update tab button styles
-            ['parts', 'ide', 'serial'].forEach(t => {
+            ['parts', 'ide', 'serial', 'scope'].forEach(t => {
                 const btn = document.getElementById(`tab-${t}`);
                 if (!btn) return;
                 const active = t === tabName;
@@ -2773,8 +2821,13 @@ Return ONLY a valid JSON object matching this TypeScript structure:
 
             if (tabName === 'parts') {
                 enterFreeBuildMode();
-            } else if (tabName !== 'serial') {
+            } else if (tabName !== 'serial' && tabName !== 'scope') {
                 enterPresetMode();
+            }
+
+            // If switching to Scope while simulation is running, hook up the oscilloscope
+            if (tabName === 'scope' && isSimulating) {
+                startOscilloscope();
             }
         }
 
@@ -3524,6 +3577,170 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         }
 
         // ========================================================
+        // OSCILLOSCOPE ENGINE
+        // ========================================================
+        const OSC_BUFFER_SIZE = 300;
+        const OSC_SAMPLE_MS   = 100;
+        let oscBuffer         = [];
+        let oscAnimFrame      = null;
+        let oscSampleTimer    = null;
+        let oscRunning        = false;
+
+        function getOscVoltage() {
+            if (!isSimulating) return null;
+            switch (activePreset) {
+                case 'blink': {
+                    const led = customMeshes["led"];
+                    const on  = led && led.children[4] && led.children[4].intensity > 0;
+                    return on ? 5 : 0;
+                }
+                case 'night':
+                    return (activeLdrLevel / 100) * 5;
+                case 'button':
+                    return activeButtonState ? 5 : 0;
+                case 'alarm': {
+                    const bz = customMeshes["buzzer"];
+                    const on = bz && Math.abs(bz.position.y) > 0.01;
+                    return on ? 5 : 0;
+                }
+                default:
+                    return 2.5 + Math.sin(Date.now() * 0.002) * 0.3;
+            }
+        }
+
+        function oscSampleTick() {
+            const v = getOscVoltage();
+            if (v === null) return;
+            oscBuffer.push({ v, t: Date.now() });
+            if (oscBuffer.length > OSC_BUFFER_SIZE) oscBuffer.shift();
+        }
+
+        function startOscilloscope() {
+            if (oscRunning) return;
+            oscRunning = true;
+            const idle = document.getElementById('osc-idle');
+            if (idle) idle.style.display = 'none';
+            oscSampleTimer = setInterval(oscSampleTick, OSC_SAMPLE_MS);
+            oscDrawLoop();
+        }
+
+        function stopOscilloscope() {
+            oscRunning = false;
+            clearInterval(oscSampleTimer);
+            oscSampleTimer = null;
+            if (oscAnimFrame) { cancelAnimationFrame(oscAnimFrame); oscAnimFrame = null; }
+            const idle = document.getElementById('osc-idle');
+            if (idle) idle.style.display = '';
+            oscDraw();
+        }
+
+        function clearOscilloscope() {
+            oscBuffer = [];
+            const sl = document.getElementById('osc-signal-label');
+            const fl = document.getElementById('osc-freq-label');
+            if (sl) sl.textContent = 'Signal: —';
+            if (fl) fl.textContent = '—';
+            oscDraw();
+        }
+
+        function oscDraw() {
+            const canvas = document.getElementById('osc-canvas');
+            if (!canvas) return;
+            const W = canvas.offsetWidth  || 300;
+            const H = canvas.offsetHeight || 200;
+            if (canvas.width !== W || canvas.height !== H) {
+                canvas.width  = W;
+                canvas.height = H;
+            }
+            const ctx = canvas.getContext('2d');
+            const PAD_L = 36, PAD_R = 12, PAD_T = 14, PAD_B = 20;
+            const plotW = W - PAD_L - PAD_R;
+            const plotH = H - PAD_T - PAD_B;
+
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, W, H);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(51, 65, 85, 0.7)';
+            ctx.lineWidth = 1;
+            for (let r = 0; r <= 5; r++) {
+                const y = PAD_T + (r / 5) * plotH;
+                ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(PAD_L + plotW, y); ctx.stroke();
+            }
+            for (let c = 0; c <= 10; c++) {
+                const x = PAD_L + (c / 10) * plotW;
+                ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, PAD_T + plotH); ctx.stroke();
+            }
+
+            // Y-axis labels
+            ctx.fillStyle = '#475569';
+            ctx.font = '9px JetBrains Mono, monospace';
+            ctx.textAlign = 'right';
+            for (let r = 0; r <= 5; r++) {
+                const v = 5 - (r / 5) * 5;
+                const y = PAD_T + (r / 5) * plotH;
+                ctx.fillText(v.toFixed(0) + 'V', PAD_L - 4, y + 3);
+            }
+
+            if (oscBuffer.length < 2) return;
+
+            const samples = oscBuffer.slice(-Math.min(oscBuffer.length, 150));
+            const vToY    = v => PAD_T + plotH - (v / 5) * plotH;
+            const xStep   = plotW / (samples.length - 1 || 1);
+
+            // Glow pass
+            ctx.shadowBlur  = 10;
+            ctx.shadowColor = '#4ade80';
+            ctx.strokeStyle = 'rgba(74, 222, 128, 0.2)';
+            ctx.lineWidth   = 5;
+            ctx.beginPath();
+            samples.forEach((s, i) => {
+                const x = PAD_L + i * xStep, y = vToY(s.v);
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Sharp trace
+            ctx.shadowBlur  = 4;
+            ctx.shadowColor = '#86efac';
+            ctx.strokeStyle = '#4ade80';
+            ctx.lineWidth   = 1.5;
+            ctx.beginPath();
+            samples.forEach((s, i) => {
+                const x = PAD_L + i * xStep, y = vToY(s.v);
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Live readout
+            const last = samples[samples.length - 1];
+            const sigNames = { blink: 'D13 (LED)', night: 'A0 (LDR)', button: 'D2 (Button)', alarm: 'D8 (Buzzer)' };
+            const slEl = document.getElementById('osc-signal-label');
+            if (slEl) slEl.textContent = `${sigNames[activePreset] || 'Signal'}  ${last.v.toFixed(2)} V`;
+
+            let crossings = 0;
+            for (let i = 1; i < samples.length; i++) {
+                if ((samples[i - 1].v < 2.5) !== (samples[i].v < 2.5)) crossings++;
+            }
+            const duration = (samples[samples.length - 1].t - samples[0].t) / 1000;
+            const flEl = document.getElementById('osc-freq-label');
+            if (flEl) {
+                if (duration > 0 && crossings > 1) {
+                    const hz = (crossings / 2) / duration;
+                    flEl.textContent = hz >= 1 ? `${hz.toFixed(1)} Hz` : `${(hz * 1000).toFixed(0)} mHz`;
+                } else {
+                    flEl.textContent = crossings <= 1 ? 'DC' : '—';
+                }
+            }
+        }
+
+        function oscDrawLoop() {
+            oscDraw();
+            if (oscRunning) oscAnimFrame = requestAnimationFrame(oscDrawLoop);
+        }
+
+        // ========================================================
         // EDITABLE FIRMWARE IDE — Run Custom Code
         // ========================================================
         function runCustomCode() {
@@ -3932,11 +4149,13 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             card.classList.add('pop');
 
             // Position spotlight + card
+            const dimEl = document.getElementById('tour-dim');
             if (step.target) {
                 const target = document.querySelector(step.target);
                 if (target) {
                     const rect = target.getBoundingClientRect();
                     const pad = 6;
+                    dimEl.style.display = 'none';
                     Object.assign(spotlight.style, {
                         display: 'block',
                         left:   (rect.left  - pad) + 'px',
@@ -3947,10 +4166,12 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                     _positionCard(card, rect, step.position);
                 }
             } else {
+                // No target: use the full-screen dim div, hide spotlight
                 spotlight.style.display = 'none';
-                card.style.left      = '50%';
-                card.style.top       = '50%';
-                card.style.transform = 'translate(-50%, -50%)';
+                dimEl.style.display     = 'block';
+                card.style.left         = '50%';
+                card.style.top          = '50%';
+                card.style.transform    = 'translate(-50%, -50%)';
             }
         }
 
@@ -4106,6 +4327,8 @@ Return ONLY a valid JSON object matching this TypeScript structure:
 
     <!-- ── Onboarding Tour ── -->
     <div id="tour-overlay">
+        <!-- Full-screen dim used for steps with no spotlight target (e.g. welcome) -->
+        <div id="tour-dim" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.78); z-index:1050; pointer-events:none;"></div>
         <!-- Spotlight: the box-shadow creates the dark backdrop with a transparent cutout -->
         <div id="tour-spotlight" class="tour-spotlight" style="display:none;"></div>
 
