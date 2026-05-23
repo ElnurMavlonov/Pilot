@@ -169,9 +169,132 @@
         /* Parts Library drag states */
         .part-card.dragging { opacity: 0.4; transform: scale(0.95); }
         #canvas-view.drag-over { outline: 2px dashed #6366f1; outline-offset: -4px; }
+
+        /* Right-click context menu */
+        #ctx-menu {
+            position: fixed;
+            z-index: 999;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+            padding: 6px;
+            min-width: 180px;
+            display: none;
+            flex-direction: column;
+            gap: 2px;
+            animation: ctx-pop 0.12s cubic-bezier(0.34,1.56,0.64,1);
+            transform-origin: top left;
+        }
+        #ctx-menu.visible { display: flex; }
+        @keyframes ctx-pop {
+            from { opacity: 0; transform: scale(0.88); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        .ctx-header {
+            padding: 8px 10px 6px;
+            border-bottom: 1px solid #f1f5f9;
+            margin-bottom: 2px;
+        }
+        .ctx-header .ctx-type {
+            font-size: 11px;
+            font-weight: 700;
+            color: #1e293b;
+            text-transform: capitalize;
+        }
+        .ctx-header .ctx-id {
+            font-size: 9px;
+            font-family: 'JetBrains Mono', monospace;
+            color: #94a3b8;
+            margin-top: 1px;
+        }
+        .ctx-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            border-radius: 9px;
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #475569;
+            transition: background 0.1s, color 0.1s;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+        }
+        .ctx-row:hover { background: #f8fafc; color: #0f172a; }
+        .ctx-row.danger { color: #ef4444; }
+        .ctx-row.danger:hover { background: #fef2f2; color: #dc2626; }
+        .ctx-divider { height: 1px; background: #f1f5f9; margin: 2px 0; }
+        /* Info sub-panel inside context menu */
+        .ctx-info-block {
+            background: #f8fafc;
+            border-radius: 9px;
+            padding: 8px 10px;
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .ctx-info-block.open { display: flex; }
+        .ctx-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+        }
+        .ctx-info-row .lbl { color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+        .ctx-info-row .val { color: #334155; font-family: 'JetBrains Mono', monospace; font-size: 9.5px; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen overflow-hidden flex flex-col md:flex-row grid-bg">
+
+    <!-- Right-click Context Menu -->
+    <div id="ctx-menu" role="menu">
+        <!-- Header: component name + id -->
+        <div class="ctx-header">
+            <div class="ctx-type" id="ctx-type">Component</div>
+            <div class="ctx-id" id="ctx-id">id</div>
+        </div>
+
+        <!-- Info toggle row -->
+        <button class="ctx-row" onclick="toggleCtxInfo()">
+            <i class="fa-solid fa-circle-info text-indigo-400 w-3.5 text-center"></i>
+            <span id="ctx-info-label">Show Info</span>
+        </button>
+
+        <!-- Expandable info block -->
+        <div class="ctx-info-block" id="ctx-info-block">
+            <div class="ctx-info-row">
+                <span class="lbl">Type</span><span class="val" id="ci-type">—</span>
+            </div>
+            <div class="ctx-info-row">
+                <span class="lbl">Variant</span><span class="val" id="ci-variant">—</span>
+            </div>
+            <div class="ctx-info-row">
+                <span class="lbl">Position X</span><span class="val" id="ci-x">—</span>
+            </div>
+            <div class="ctx-info-row">
+                <span class="lbl">Position Z</span><span class="val" id="ci-z">—</span>
+            </div>
+            <div class="ctx-info-row">
+                <span class="lbl">Instance</span><span class="val" id="ci-instance">—</span>
+            </div>
+        </div>
+
+        <div class="ctx-divider"></div>
+
+        <!-- Select -->
+        <button class="ctx-row" onclick="ctxSelect()">
+            <i class="fa-solid fa-arrow-pointer text-slate-400 w-3.5 text-center"></i> Select
+        </button>
+
+        <!-- Delete -->
+        <button class="ctx-row danger" onclick="ctxDelete()">
+            <i class="fa-solid fa-trash-can w-3.5 text-center"></i> Delete
+        </button>
+    </div>
 
     <!-- Toast Alert Modal -->
     <div id="toast" class="fixed top-6 right-6 bg-white border border-indigo-200 text-indigo-700 px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 transition-all duration-300 transform translate-y-[-100px] opacity-0 z-50">
@@ -1329,8 +1452,12 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             // Click to select placed components
             renderer.domElement.addEventListener('click', onCanvasClick);
 
+            // Right-click context menu on placed components
+            renderer.domElement.addEventListener('contextmenu', onCanvasRightClick);
+
             // Delete key removes selected component
             window.addEventListener('keydown', e => {
+                if (e.key === 'Escape') { closeCtxMenu(); return; }
                 if ((e.key === 'Delete' || e.key === 'Backspace') && selectedComponent && isFreeBuildMode) {
                     // Don't fire if user is typing in an input
                     if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
@@ -1338,6 +1465,12 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                     deleteSelectedComponent();
                 }
             });
+
+            // Close context menu on any click outside it
+            window.addEventListener('click', e => {
+                const menu = document.getElementById('ctx-menu');
+                if (menu && !menu.contains(e.target)) closeCtxMenu();
+            }, true);
 
             // Use centralized resize handler
             window.addEventListener("resize", triggerCanvasResize);
@@ -2026,6 +2159,100 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 row.addEventListener('click', () => selectComponent(g));
                 list.appendChild(row);
             });
+        }
+
+        // ========================================================
+        // RIGHT-CLICK CONTEXT MENU
+        // ========================================================
+
+        let ctxTarget = null; // the THREE.Group that was right-clicked
+
+        /** Raycast on right-click; show context menu if a free-placed component is hit */
+        function onCanvasRightClick(e) {
+            e.preventDefault();
+            closeCtxMenu();
+            if (!isFreeBuildMode) return;
+
+            const rect = renderer.domElement.getBoundingClientRect();
+            const ray = new THREE.Raycaster();
+            ray.setFromCamera(new THREE.Vector2(
+                ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                -((e.clientY - rect.top) / rect.height) * 2 + 1
+            ), camera);
+
+            const allMeshes = [];
+            placedComponents.forEach(g => g.traverse(c => { if (c.isMesh) allMeshes.push(c); }));
+
+            const hits = ray.intersectObjects(allMeshes, false);
+            if (hits.length === 0) return;
+
+            // Walk up to root group
+            let obj = hits[0].object;
+            while (obj.parent && !obj.userData.isFreePlaced) obj = obj.parent;
+            if (!obj.userData.isFreePlaced) return;
+
+            ctxTarget = obj;
+            selectComponent(obj); // also highlight it
+            openCtxMenu(e.clientX, e.clientY, obj);
+        }
+
+        /** Position and populate the context menu */
+        function openCtxMenu(x, y, group) {
+            const menu = document.getElementById('ctx-menu');
+            const ud = group.userData;
+
+            // Header
+            const label = ud.variant ? `${ud.type} (${ud.variant})` : ud.type;
+            document.getElementById('ctx-type').textContent = label;
+            document.getElementById('ctx-id').textContent   = ud.instanceId;
+
+            // Info fields
+            document.getElementById('ci-type').textContent     = ud.type;
+            document.getElementById('ci-variant').textContent  = ud.variant || '—';
+            document.getElementById('ci-x').textContent        = group.position.x.toFixed(2);
+            document.getElementById('ci-z').textContent        = group.position.z.toFixed(2);
+            document.getElementById('ci-instance').textContent = ud.instanceId;
+
+            // Reset info toggle
+            document.getElementById('ctx-info-block').classList.remove('open');
+            document.getElementById('ctx-info-label').textContent = 'Show Info';
+
+            // Place menu — keep it inside viewport
+            const menuW = 190, menuH = 230;
+            const vw = window.innerWidth, vh = window.innerHeight;
+            menu.style.left = (x + menuW > vw ? x - menuW : x) + 'px';
+            menu.style.top  = (y + menuH > vh ? y - menuH : y) + 'px';
+            menu.classList.add('visible');
+        }
+
+        function closeCtxMenu() {
+            document.getElementById('ctx-menu').classList.remove('visible');
+            ctxTarget = null;
+        }
+
+        /** Toggle the info sub-panel inside the context menu */
+        function toggleCtxInfo() {
+            const block = document.getElementById('ctx-info-block');
+            const lbl   = document.getElementById('ctx-info-label');
+            const open  = block.classList.toggle('open');
+            lbl.textContent = open ? 'Hide Info' : 'Show Info';
+        }
+
+        /** Select the right-clicked component (already done on open, but makes it explicit) */
+        function ctxSelect() {
+            if (ctxTarget) selectComponent(ctxTarget);
+            closeCtxMenu();
+        }
+
+        /** Delete the right-clicked component */
+        function ctxDelete() {
+            if (!ctxTarget) return;
+            scene.remove(ctxTarget);
+            placedComponents.splice(placedComponents.indexOf(ctxTarget), 1);
+            if (selectedComponent === ctxTarget) selectedComponent = null;
+            ctxTarget = null;
+            closeCtxMenu();
+            refreshPlacedList();
         }
 
         // Entry point
