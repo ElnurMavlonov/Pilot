@@ -514,6 +514,10 @@
                     <i class="fa-solid fa-folder-open text-xs"></i>
                 </button>
                 <input id="load-file-input" type="file" accept=".json" class="hidden" onchange="loadProject(this)">
+                <!-- Share circuit link -->
+                <button onclick="shareCircuitLink()" title="Share Circuit Link" class="panel-close-btn" style="display:flex;">
+                    <i class="fa-solid fa-share-nodes text-xs"></i>
+                </button>
                 <!-- Dark mode toggle -->
                 <button id="dark-toggle-btn" onclick="toggleDarkMode()" title="Toggle Dark Mode" class="panel-close-btn" style="display:flex;">
                     <i class="fa-solid fa-moon text-xs"></i>
@@ -664,6 +668,12 @@
 
         <!-- 3D Camera Controls -->
         <div class="absolute bottom-6 right-6 flex items-center gap-2 z-10">
+            <button id="btn-undo" onclick="undo()" disabled title="Undo (Ctrl+Z)" class="p-3 bg-white/95 border border-slate-200 text-slate-400 rounded-xl shadow-lg hover:bg-white transition text-xs font-semibold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-rotate-left"></i>
+            </button>
+            <button id="btn-redo" onclick="redo()" disabled title="Redo (Ctrl+Y)" class="p-3 bg-white/95 border border-slate-200 text-slate-400 rounded-xl shadow-lg hover:bg-white transition text-xs font-semibold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
             <button id="mute-btn" onclick="toggleMuteAudio()" class="p-3 bg-white/95 border border-slate-200 text-slate-700 rounded-xl shadow-lg hover:bg-white transition flex items-center gap-2 text-xs font-semibold cursor-pointer" title="Mute/Unmute Buzzer">
                 <i id="mute-icon" class="fa-solid fa-volume-high text-indigo-400"></i>
             </button>
@@ -1036,9 +1046,16 @@
             if (e.key === '?' && !isEditing) {
                 toggleShortcutsOverlay();
             }
+            if ((e.key === 's' || e.key === 'S') && !e.metaKey && !e.ctrlKey && !isEditing) shareCircuitLink();
             if (e.key === 'Escape') {
                 const overlay = document.getElementById('shortcuts-overlay');
                 if (overlay && overlay.classList.contains('open')) overlay.classList.remove('open');
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && !isEditing) {
+                e.preventDefault(); undo();
+            }
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey)) && !isEditing) {
+                e.preventDefault(); redo();
             }
         });
 
@@ -1338,9 +1355,27 @@ void loop() {
             { id:'buzzer',      label:'Piezo Buzzer',  icon:'fa-volume-high',   color:'text-amber-600',  bg:'bg-amber-50',    category:'actuators',        type:'buzzer' },
             { id:'button',      label:'Push Button',   icon:'fa-hand-pointer',  color:'text-pink-600',   bg:'bg-pink-50',     category:'sensors',          type:'button' },
             { id:'ldr',         label:'LDR Sensor',    icon:'fa-sun',           color:'text-yellow-600', bg:'bg-yellow-50',   category:'sensors',          type:'ldr' },
+<<<<<<< HEAD
+            { id:'res_220',     label:'Resistor 220Ω',       icon:'fa-wave-square',   color:'text-purple-600',  bg:'bg-purple-50',   category:'passive',  type:'resistor',    variant:'220' },
+            { id:'res_1k',      label:'Resistor 1kΩ',        icon:'fa-wave-square',   color:'text-violet-600',  bg:'bg-violet-50',   category:'passive',  type:'resistor',    variant:'1k' },
+            { id:'res_10k',     label:'Resistor 10kΩ',       icon:'fa-wave-square',   color:'text-fuchsia-600', bg:'bg-fuchsia-50',  category:'passive',  type:'resistor',    variant:'10k' },
+            { id:'cap_elec',    label:'Capacitor (Elec)',     icon:'fa-battery-half',  color:'text-slate-600',   bg:'bg-slate-100',   category:'passive',  type:'capacitor',   variant:'electrolytic' },
+            { id:'cap_cer',     label:'Capacitor (Ceramic)',  icon:'fa-circle-half-stroke', color:'text-yellow-700', bg:'bg-yellow-50', category:'passive', type:'capacitor',   variant:'ceramic' },
+            { id:'pot',         label:'Potentiometer',        icon:'fa-sliders',       color:'text-sky-600',     bg:'bg-sky-50',      category:'passive',  type:'potentiometer' },
+            { id:'thermistor',  label:'Thermistor (NTC)',     icon:'fa-temperature-half', color:'text-orange-600', bg:'bg-orange-50', category:'passive',  type:'thermistor' },
+            { id:'transistor_npn', label:'Transistor (NPN)', icon:'fa-arrow-right-to-bracket', color:'text-emerald-700', bg:'bg-emerald-50', category:'passive', type:'transistor', variant:'NPN' },
+            { id:'transistor_pnp', label:'Transistor (PNP)', icon:'fa-arrow-right-from-bracket', color:'text-teal-700', bg:'bg-teal-50', category:'passive', type:'transistor', variant:'PNP' },
+=======
             { id:'res_220',     label:'Resistor 220Ω', icon:'fa-wave-square',   color:'text-purple-600', bg:'bg-purple-50',   category:'passive',          type:'resistor', variant:'220' },
             { id:'res_1k',      label:'Resistor 1kΩ',  icon:'fa-wave-square',   color:'text-violet-600', bg:'bg-violet-50',   category:'passive',          type:'resistor', variant:'1k' },
             { id:'res_10k',     label:'Resistor 10kΩ', icon:'fa-wave-square',   color:'text-fuchsia-600',bg:'bg-fuchsia-50',  category:'passive',          type:'resistor', variant:'10k' },
+            { id:'cap_e',       label:'Capacitor (E)', icon:'fa-bolt',          color:'text-cyan-600',   bg:'bg-cyan-50',     category:'passive',          type:'capacitor_electro' },
+            { id:'cap_c',       label:'Capacitor (C)', icon:'fa-bolt',          color:'text-teal-600',   bg:'bg-teal-50',     category:'passive',          type:'capacitor_ceramic' },
+            { id:'pot',         label:'Potentiometer', icon:'fa-sliders',       color:'text-emerald-600',bg:'bg-emerald-50',  category:'passive',          type:'potentiometer' },
+            { id:'therm',       label:'Thermistor',    icon:'fa-temperature-half', color:'text-rose-600',bg:'bg-rose-50',    category:'passive',          type:'thermistor' },
+            { id:'npn',         label:'NPN Transistor',icon:'fa-microchip',     color:'text-slate-600',  bg:'bg-slate-100',   category:'passive',          type:'transistor', variant:'npn' },
+            { id:'pnp',         label:'PNP Transistor',icon:'fa-microchip',     color:'text-slate-600',  bg:'bg-slate-100',   category:'passive',          type:'transistor', variant:'pnp' },
+>>>>>>> 71d5a02ba0e16ba64b541e4370d46553aa35699f
         ];
 
         let activePreset = "blink";
@@ -1372,6 +1407,12 @@ void loop() {
         let dragHasMoved   = false;  // true once pointer moves past threshold
         let pointerDownPos = { x: 0, y: 0 };
         const DRAG_PX_THRESHOLD = 5; // pixels before a press becomes a drag
+
+        // Undo / Redo stacks
+        let undoStack = [];
+        let redoStack = [];
+        const UNDO_MAX = 50;
+        let _inRestore = false; // guard: prevents saveUndoSnapshot() during restoreSnapshot()
 
         // ========================================================
         // GEMINI AI INTEGRATION (30 Points Technical Metric)
@@ -1509,6 +1550,9 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         function applyPreset(key) {
             activePreset = key;
             activeStep = 0;
+            undoStack = [];
+            redoStack = [];
+            updateUndoRedoUI();
 
             const data = PRESETS[key];
             document.getElementById("status-badge").innerHTML = `<span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span> ${data.topic}`;
@@ -1677,6 +1721,12 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             const _buz   = buildPiezoBuzzer(2.5, 0.8); meshGroup.add(_buz);   customMeshes["buzzer"] = _buz;
             const _btn   = buildButton(2.5, 1.8);      meshGroup.add(_btn);   customMeshes["button"] = _btn;
             const _ldr   = buildLDR(2.5, -1.8);        meshGroup.add(_ldr);   customMeshes["ldr"] = _ldr;
+            const _capE  = buildElectrolyticCapacitor(3.4, 0.2); meshGroup.add(_capE); customMeshes["capacitor_electro"] = _capE;
+            const _capC  = buildCeramicCapacitor(3.4, 1.2); meshGroup.add(_capC); customMeshes["capacitor_ceramic"] = _capC;
+            const _pot   = buildPotentiometer(3.4, -1.8); meshGroup.add(_pot); customMeshes["potentiometer"] = _pot;
+            const _therm = buildThermistor(3.4, -2.8); meshGroup.add(_therm); customMeshes["thermistor"] = _therm;
+            const _npn   = buildTransistor(4.5, 0, 'NPN'); meshGroup.add(_npn); customMeshes["npn"] = _npn;
+            const _pnp   = buildTransistor(4.5, 1.0, 'PNP'); meshGroup.add(_pnp); customMeshes["pnp"] = _pnp;
 
             meshGroup.position.set(0, 0, 0);
 
@@ -1951,6 +2001,140 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             return r;
         }
 
+        function buildCapacitor(x = 3.4, z = -0.8, variant = 'electrolytic') {
+            const g = new THREE.Group();
+            g.position.set(x, 0, z);
+            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9, roughness: 0.1 });
+
+            if (variant === 'electrolytic') {
+                // Tall cylindrical body — dark blue aluminium can
+                const bodyGeom = new THREE.CylinderGeometry(0.18, 0.18, 0.7, 16);
+                const bodyMat = new THREE.MeshStandardMaterial({ color: "#1e3a5f", roughness: 0.5 });
+                const body = new THREE.Mesh(bodyGeom, bodyMat);
+                body.position.y = 0.65;
+                g.add(body);
+                // White stripe on top
+                const stripeGeom = new THREE.CylinderGeometry(0.185, 0.185, 0.12, 16);
+                const stripeMat = new THREE.MeshStandardMaterial({ color: "#e2e8f0", roughness: 0.6 });
+                const stripe = new THREE.Mesh(stripeGeom, stripeMat);
+                stripe.position.y = 0.97;
+                g.add(stripe);
+                // Top cap
+                const topGeom = new THREE.CylinderGeometry(0.18, 0.18, 0.04, 16);
+                const topMat = new THREE.MeshStandardMaterial({ color: "#94a3b8", metalness: 0.7 });
+                const top = new THREE.Mesh(topGeom, topMat);
+                top.position.y = 1.04;
+                g.add(top);
+                // Leads
+                const leadGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.45, 8);
+                const l1 = new THREE.Mesh(leadGeom, metal); l1.position.set(-0.08, 0.22, 0);
+                const l2 = new THREE.Mesh(leadGeom, metal); l2.position.set(0.08, 0.22, 0);
+                g.add(l1, l2);
+            } else {
+                // Ceramic disc — flat ochre disc
+                const discGeom = new THREE.CylinderGeometry(0.22, 0.22, 0.06, 16);
+                const discMat = new THREE.MeshStandardMaterial({ color: "#b45309", roughness: 0.7 });
+                const disc = new THREE.Mesh(discGeom, discMat);
+                disc.position.y = 0.42;
+                g.add(disc);
+                const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.45, 8);
+                const l1 = new THREE.Mesh(leadGeom, metal); l1.position.set(-0.1, 0.22, 0);
+                const l2 = new THREE.Mesh(leadGeom, metal); l2.position.set(0.1, 0.22, 0);
+                g.add(l1, l2);
+            }
+            return g;
+        }
+
+        function buildPotentiometer(x = 3.4, z = -0.8) {
+            const g = new THREE.Group();
+            g.position.set(x, 0, z);
+            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9, roughness: 0.1 });
+
+            // Body — square blue block
+            const bodyGeom = new THREE.BoxGeometry(0.55, 0.42, 0.55);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: "#1d4ed8", roughness: 0.6 });
+            const body = new THREE.Mesh(bodyGeom, bodyMat);
+            body.position.y = 0.41;
+            g.add(body);
+
+            // Knob shaft (metal cylinder on top)
+            const shaftGeom = new THREE.CylinderGeometry(0.07, 0.07, 0.22, 12);
+            const shaft = new THREE.Mesh(shaftGeom, metal);
+            shaft.position.y = 0.73;
+            g.add(shaft);
+
+            // Knob cap
+            const knobGeom = new THREE.CylinderGeometry(0.14, 0.14, 0.1, 16);
+            const knobMat = new THREE.MeshStandardMaterial({ color: "#334155", roughness: 0.4 });
+            const knob = new THREE.Mesh(knobGeom, knobMat);
+            knob.position.y = 0.87;
+            g.add(knob);
+
+            // 3 leads — left (A), middle (wiper), right (B)
+            const leadGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.4, 8);
+            const positions = [-0.18, 0, 0.18];
+            positions.forEach(px => {
+                const l = new THREE.Mesh(leadGeom, metal);
+                l.position.set(px, 0.2, 0);
+                g.add(l);
+            });
+            return g;
+        }
+
+        function buildThermistor(x = 3.4, z = -0.8) {
+            const g = new THREE.Group();
+            g.position.set(x, 0, z);
+            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9, roughness: 0.1 });
+
+            // Epoxy bead — small dark teardrop (sphere + cylinder)
+            const beadGeom = new THREE.SphereGeometry(0.18, 16, 16);
+            const beadMat = new THREE.MeshStandardMaterial({ color: "#292524", roughness: 0.8 });
+            const bead = new THREE.Mesh(beadGeom, beadMat);
+            bead.position.y = 0.48;
+            g.add(bead);
+
+            // Two fine leads
+            const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.5, 8);
+            const l1 = new THREE.Mesh(leadGeom, metal); l1.position.set(-0.09, 0.25, 0);
+            const l2 = new THREE.Mesh(leadGeom, metal); l2.position.set(0.09, 0.25, 0);
+            g.add(l1, l2);
+            return g;
+        }
+
+        function buildTransistor(x = 3.4, z = -0.8, variant = 'NPN') {
+            const g = new THREE.Group();
+            g.position.set(x, 0, z);
+            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9, roughness: 0.1 });
+
+            // TO-92 D-shaped body
+            const bodyGeom = new THREE.CylinderGeometry(0.2, 0.2, 0.42, 16, 1, false, 0, Math.PI);
+            const capGeom  = new THREE.CylinderGeometry(0.2, 0.2, 0.42, 16, 1, false, Math.PI, Math.PI);
+            const bodyColor = variant === 'PNP' ? '#1e3a5f' : '#0f172a';
+            const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.7 });
+            const body = new THREE.Mesh(bodyGeom, bodyMat);
+            body.position.y = 0.51;
+            const flat = new THREE.Mesh(capGeom, bodyMat);
+            flat.position.y = 0.51;
+            g.add(body, flat);
+
+            // "NPN" / "PNP" color band at top
+            const bandGeom = new THREE.CylinderGeometry(0.205, 0.205, 0.06, 16);
+            const bandColor = variant === 'PNP' ? '#22d3ee' : '#4ade80';
+            const bandMat = new THREE.MeshBasicMaterial({ color: bandColor });
+            const band = new THREE.Mesh(bandGeom, bandMat);
+            band.position.y = 0.69;
+            g.add(band);
+
+            // Three leads — B (base), C (collector), E (emitter)
+            const leadGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.45, 8);
+            [-0.18, 0, 0.18].forEach(px => {
+                const l = new THREE.Mesh(leadGeom, metal);
+                l.position.set(px, 0.22, 0);
+                g.add(l);
+            });
+            return g;
+        }
+
         function buildPiezoBuzzer(x = 2.5, z = 0.8) {
             const buzzer = new THREE.Group();
             buzzer.position.set(x, 0, z);
@@ -2012,6 +2196,117 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             ldr.add(pin1, pin2);
 
             return ldr;
+        }
+
+        function buildElectrolyticCapacitor(x = 3.4, z = 0.2) {
+            const cap = new THREE.Group();
+            cap.position.set(x, 0.5, z);
+
+            const bodyGeom = new THREE.CylinderGeometry(0.2, 0.2, 0.6, 16);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: "#1e293b", roughness: 0.6 });
+            const body = new THREE.Mesh(bodyGeom, bodyMat);
+            cap.add(body);
+
+            const stripeGeom = new THREE.CylinderGeometry(0.21, 0.21, 0.6, 16, 1, false, 0, Math.PI/4);
+            const stripeMat = new THREE.MeshBasicMaterial({ color: "#cbd5e1" });
+            const stripe = new THREE.Mesh(stripeGeom, stripeMat);
+            cap.add(stripe);
+
+            const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.5, 8);
+            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
+
+            const pin1 = new THREE.Mesh(leadGeom, metal); pin1.position.set(-0.1, -0.4, 0);
+            const pin2 = new THREE.Mesh(leadGeom, metal); pin2.position.set(0.1, -0.4, 0);
+            cap.add(pin1, pin2);
+
+            return cap;
+        }
+
+        function buildCeramicCapacitor(x = 3.4, z = 1.2) {
+            const cap = new THREE.Group();
+            cap.position.set(x, 0.4, z);
+
+            const bodyGeom = new THREE.CylinderGeometry(0.2, 0.2, 0.1, 16);
+            bodyGeom.rotateX(Math.PI / 2);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: "#ca8a04", roughness: 0.5 });
+            const body = new THREE.Mesh(bodyGeom, bodyMat);
+            cap.add(body);
+
+            const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.4, 8);
+            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
+
+            const pin1 = new THREE.Mesh(leadGeom, metal); pin1.position.set(-0.1, -0.2, 0);
+            const pin2 = new THREE.Mesh(leadGeom, metal); pin2.position.set(0.1, -0.2, 0);
+            cap.add(pin1, pin2);
+
+            return cap;
+        }
+
+        function buildPotentiometer(x = 3.4, z = -1.8) {
+            const pot = new THREE.Group();
+            pot.position.set(x, 0.2, z);
+
+            const bodyGeom = new THREE.BoxGeometry(0.5, 0.2, 0.5);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: "#3b82f6", roughness: 0.7 });
+            const body = new THREE.Mesh(bodyGeom, bodyMat);
+            pot.add(body);
+
+            const shaftGeom = new THREE.CylinderGeometry(0.1, 0.1, 0.3, 16);
+            const shaftMat = new THREE.MeshStandardMaterial({ color: "#f8fafc", roughness: 0.5 });
+            const shaft = new THREE.Mesh(shaftGeom, shaftMat);
+            shaft.position.y = 0.25;
+            pot.add(shaft);
+
+            const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.3, 8);
+            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
+
+            const pin1 = new THREE.Mesh(leadGeom, metal); pin1.position.set(-0.2, -0.15, 0);
+            const pin2 = new THREE.Mesh(leadGeom, metal); pin2.position.set(0, -0.15, 0);
+            const pin3 = new THREE.Mesh(leadGeom, metal); pin3.position.set(0.2, -0.15, 0);
+            pot.add(pin1, pin2, pin3);
+
+            return pot;
+        }
+
+        function buildThermistor(x = 3.4, z = -2.8) {
+            const therm = new THREE.Group();
+            therm.position.set(x, 0.3, z);
+
+            const bobGeom = new THREE.SphereGeometry(0.15, 16, 16);
+            const bobMat = new THREE.MeshStandardMaterial({ color: "#000000", roughness: 0.8 });
+            const bob = new THREE.Mesh(bobGeom, bobMat);
+            therm.add(bob);
+
+            const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.3, 8);
+            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
+
+            const pin1 = new THREE.Mesh(leadGeom, metal); pin1.position.set(-0.08, -0.2, 0);
+            const pin2 = new THREE.Mesh(leadGeom, metal); pin2.position.set(0.08, -0.2, 0);
+            therm.add(pin1, pin2);
+
+            return therm;
+        }
+
+        function buildTransistor(x = 4.5, z = 0, type = 'NPN') {
+            const trans = new THREE.Group();
+            trans.position.set(x, 0.3, z);
+
+            const bodyGeom = new THREE.CylinderGeometry(0.15, 0.15, 0.3, 16, 1, false, 0, Math.PI);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: "#1e293b", roughness: 0.8 });
+            const body = new THREE.Mesh(bodyGeom, bodyMat);
+            body.rotation.z = Math.PI / 2;
+            body.rotation.y = Math.PI / 2;
+            trans.add(body);
+
+            const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.3, 8);
+            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
+
+            const pin1 = new THREE.Mesh(leadGeom, metal); pin1.position.set(-0.1, -0.2, 0);
+            const pin2 = new THREE.Mesh(leadGeom, metal); pin2.position.set(0, -0.2, 0);
+            const pin3 = new THREE.Mesh(leadGeom, metal); pin3.position.set(0.1, -0.2, 0);
+            trans.add(pin1, pin2, pin3);
+
+            return trans;
         }
 
         function rebuildWiresIn3D(wiresData) {
@@ -2197,14 +2492,29 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 case 'led':        group = buildLED(x, z, variant || 'red'); break;
                 case 'buzzer':     group = buildPiezoBuzzer(x, z); break;
                 case 'button':     group = buildButton(x, z); break;
+<<<<<<< HEAD
+                case 'ldr':          group = buildLDR(x, z); break;
+                case 'resistor':     group = buildResistor(x, z, variant || '220'); break;
+                case 'capacitor':    group = buildCapacitor(x, z, variant || 'electrolytic'); break;
+                case 'potentiometer':group = buildPotentiometer(x, z); break;
+                case 'thermistor':   group = buildThermistor(x, z); break;
+                case 'transistor':   group = buildTransistor(x, z, variant || 'NPN'); break;
+=======
                 case 'ldr':        group = buildLDR(x, z); break;
                 case 'resistor':   group = buildResistor(x, z, variant || '220'); break;
+                case 'capacitor_electro': group = buildElectrolyticCapacitor(x, z); break;
+                case 'capacitor_ceramic': group = buildCeramicCapacitor(x, z); break;
+                case 'potentiometer': group = buildPotentiometer(x, z); break;
+                case 'thermistor': group = buildThermistor(x, z); break;
+                case 'transistor': group = buildTransistor(x, z, variant || 'npn'); break;
+>>>>>>> 71d5a02ba0e16ba64b541e4370d46553aa35699f
                 default: return null;
             }
 
             group.userData = { instanceId, type, variant: variant || null, isFreePlaced: true };
             scene.add(group);
             placedComponents.push(group);
+            saveUndoSnapshot();
             return group;
         }
 
@@ -2292,6 +2602,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                     const s = snapToGrid(dragComponent.position.x, dragComponent.position.z);
                     dragComponent.position.x = s.x;
                     dragComponent.position.z = s.z;
+                    saveUndoSnapshot();
                     refreshPlacedList();
                 } else {
                     // Didn't actually move — treat as a plain click
@@ -2339,20 +2650,24 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         /** Remove the currently selected free-placed component */
         function deleteSelectedComponent() {
             if (!selectedComponent) return;
+            saveUndoSnapshot();
             scene.remove(selectedComponent);
             placedComponents.splice(placedComponents.indexOf(selectedComponent), 1);
             selectedComponent = null;
             refreshPlacedList();
+            updateUndoRedoUI();
         }
 
         /** Remove a free-placed component by its unique instanceId */
         function deleteComponentById(instanceId) {
             const g = placedComponents.find(g => g.userData.instanceId === instanceId);
             if (!g) return;
+            saveUndoSnapshot();
             if (g === selectedComponent) selectedComponent = null;
             scene.remove(g);
             placedComponents.splice(placedComponents.indexOf(g), 1);
             refreshPlacedList();
+            updateUndoRedoUI();
         }
 
         /** Switch between Parts Library, Firmware IDE, and Serial Monitor tabs (right panel) */
@@ -2413,6 +2728,8 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             placedComponents.forEach(g => { g.visible = true; });
             if (isSimulating) toggleSimulation();
             glideCamera({ x: 0, y: 15, z: 8 }, { x: 0, y: 0, z: 0 });
+            // Baseline snapshot so first undo returns to empty canvas
+            if (undoStack.length === 0) saveUndoSnapshot();
         }
 
         /** Return to guided preset mode: hide free-placed, restore preset visibility */
@@ -2569,12 +2886,79 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         /** Delete the right-clicked component */
         function ctxDelete() {
             if (!ctxTarget) return;
+            saveUndoSnapshot();
             scene.remove(ctxTarget);
             placedComponents.splice(placedComponents.indexOf(ctxTarget), 1);
             if (selectedComponent === ctxTarget) selectedComponent = null;
             ctxTarget = null;
             closeCtxMenu();
             refreshPlacedList();
+            updateUndoRedoUI();
+        }
+
+        // ========================================================
+        // UNDO / REDO
+        // ========================================================
+        function currentSnapshot() {
+            return {
+                components: placedComponents.map(g => ({
+                    type: g.userData.type,
+                    variant: g.userData.variant || null,
+                    x: parseFloat(g.position.x.toFixed(3)),
+                    z: parseFloat(g.position.z.toFixed(3)),
+                    instanceId: g.userData.instanceId
+                })),
+                counters: { ...componentCounters },
+                selectedId: selectedComponent ? selectedComponent.userData.instanceId : null
+            };
+        }
+
+        function saveUndoSnapshot() {
+            if (_inRestore) return;
+            undoStack.push(currentSnapshot());
+            if (undoStack.length > UNDO_MAX) undoStack.shift();
+            redoStack = [];
+            updateUndoRedoUI();
+        }
+
+        function restoreSnapshot(snap) {
+            _inRestore = true;
+            placedComponents.forEach(g => scene.remove(g));
+            placedComponents = [];
+            selectedComponent = null;
+            componentCounters = { ...snap.counters };
+            snap.components.forEach(c => {
+                const g = createComponent(c.type, c.variant, c.x, c.z);
+                if (g) g.userData.instanceId = c.instanceId;
+            });
+            if (snap.selectedId) {
+                const target = placedComponents.find(g => g.userData.instanceId === snap.selectedId);
+                if (target) selectComponent(target);
+            }
+            _inRestore = false;
+            refreshPlacedList();
+            updateUndoRedoUI();
+        }
+
+        function undo() {
+            if (!undoStack.length) return;
+            redoStack.push(currentSnapshot());
+            restoreSnapshot(undoStack.pop());
+            showToast("Undo", false);
+        }
+
+        function redo() {
+            if (!redoStack.length) return;
+            undoStack.push(currentSnapshot());
+            restoreSnapshot(redoStack.pop());
+            showToast("Redo", false);
+        }
+
+        function updateUndoRedoUI() {
+            const uBtn = document.getElementById('btn-undo');
+            const rBtn = document.getElementById('btn-redo');
+            if (uBtn) uBtn.disabled = undoStack.length === 0;
+            if (rBtn) rBtn.disabled = redoStack.length === 0;
         }
 
         // ========================================================
@@ -3152,13 +3536,80 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             reader.readAsText(file);
         }
 
+        // ========================================================
+        // SHARE CIRCUIT LINK
+        // ========================================================
+        function shareCircuitLink() {
+            const codeEl = document.getElementById('code-content');
+            const state = {
+                version: '1.0',
+                preset: activePreset,
+                step: activeStep,
+                customCode: codeEl ? codeEl.value : '',
+                placedComponents: placedComponents.map(g => ({
+                    type: g.userData.type,
+                    variant: g.userData.variant || null,
+                    x: parseFloat(g.position.x.toFixed(3)),
+                    z: parseFloat(g.position.z.toFixed(3))
+                }))
+            };
+
+            let encoded;
+            try {
+                encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+            } catch(e) {
+                showToast("Failed to encode circuit.", false);
+                return;
+            }
+
+            const url = `${location.origin}${location.pathname}?c=${encoded}`;
+
+            navigator.clipboard.writeText(url).then(() => {
+                showToast("Share link copied to clipboard! 🔗", false);
+            }).catch(() => {
+                window.prompt("Copy this link:", url);
+            });
+        }
+
         // Entry point
         window.onload = () => {
             initPanels();
             initTheme();
             initGraphics();
-            applyPreset("blink");
             buildPartsLibraryUI();
+
+            // Restore shared circuit from URL param
+            const params = new URLSearchParams(location.search);
+            const encoded = params.get('c');
+            if (encoded) {
+                try {
+                    const state = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+                    if (state.preset && PRESETS[state.preset]) {
+                        applyPreset(state.preset);
+                        if (typeof state.step === 'number') {
+                            activeStep = state.step;
+                            renderCurrentStep();
+                        }
+                        if (state.customCode) {
+                            const codeEl = document.getElementById('code-content');
+                            if (codeEl) codeEl.value = state.customCode;
+                        }
+                        if (Array.isArray(state.placedComponents)) {
+                            state.placedComponents.forEach(c => {
+                                createComponent(c.type, c.variant, c.x, c.z);
+                            });
+                        }
+                        showToast("Circuit loaded from shared link! 🎉", false);
+                    } else {
+                        applyPreset("blink");
+                        showToast("Shared link has an unknown preset — loaded default.", false);
+                    }
+                } catch(e) {
+                    applyPreset("blink");
+                }
+            } else {
+                applyPreset("blink");
+            }
         };
     </script>
 
@@ -3180,6 +3631,8 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             <div class="shortcut-row"><span class="sh-label">Toggle IDE Panel</span><span class="sh-keys"><kbd class="sh-key">Ctrl</kbd><kbd class="sh-key">J</kbd></span></div>
             <div class="shortcut-row"><span class="sh-label">Show Shortcuts</span><span class="sh-keys"><kbd class="sh-key">?</kbd></span></div>
             <div class="shortcut-row"><span class="sh-label">Close Overlay</span><span class="sh-keys"><kbd class="sh-key">Esc</kbd></span></div>
+            <div class="shortcut-row"><span class="sh-label">Undo</span><span class="sh-keys"><kbd class="sh-key">Ctrl</kbd><kbd class="sh-key">Z</kbd></span></div>
+            <div class="shortcut-row"><span class="sh-label">Redo</span><span class="sh-keys"><kbd class="sh-key">Ctrl</kbd><kbd class="sh-key">Y</kbd></span></div>
 
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-3">3D Viewport</p>
             <div class="shortcut-row"><span class="sh-label">Rotate Camera</span><span class="sh-keys"><kbd class="sh-key">Left Drag</kbd></span></div>
@@ -3189,6 +3642,9 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-3">Components</p>
             <div class="shortcut-row"><span class="sh-label">Delete Selected</span><span class="sh-keys"><kbd class="sh-key">Del</kbd></span></div>
             <div class="shortcut-row"><span class="sh-label">Context Menu</span><span class="sh-keys"><kbd class="sh-key">Right Click</kbd></span></div>
+
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-3">Sharing</p>
+            <div class="shortcut-row"><span class="sh-label">Copy share link</span><span class="sh-keys"><kbd class="sh-key">S</kbd></span></div>
 
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-3">Firmware IDE</p>
             <div class="shortcut-row"><span class="sh-label">Copy Code</span><span class="sh-keys"><kbd class="sh-key">Ctrl</kbd><kbd class="sh-key">C</kbd></span></div>

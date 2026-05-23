@@ -8,13 +8,13 @@
 
 - [x] **Editable Firmware IDE** — Make the code terminal editable so users can write and modify Arduino C++ directly in the browser; re-run simulation with their custom code
 - [x] **Keyboard Shortcuts Overlay** — `?` key opens a cheat-sheet showing all hotkeys (rotate, zoom, run, reset, copy code, etc.)
-- [ ] **Undo / Redo** — Track circuit configuration changes with an undo stack
+- [x] **Undo / Redo** — Track circuit configuration changes with an undo stack
 
 ---
 
 ## Component Library
 
-- [ ] **More passive components** — Capacitors (electrolytic + ceramic), potentiometers, thermistors, transistors (NPN/PNP)
+- [x] **More passive components** — Capacitors (electrolytic + ceramic), potentiometers, thermistors, transistors (NPN/PNP)
 - [ ] **Sensors** — DHT11 temperature & humidity, HC-SR04 ultrasonic distance, PIR motion detector
 - [ ] **Actuators** — Servo motor, DC motor with L298N driver, relay module
 - [ ] **Displays** — 16×2 LCD module (I²C), 7-segment display, OLED 128×64
@@ -41,7 +41,7 @@
 
 - [x] **Save / Load Projects** — Export circuit configuration as a JSON file and re-import it later
 - [ ] **Export as PDF** — Generate a printable PDF with schematic, code, and step instructions
-- [ ] **Share Circuit Link** — Encode circuit state in a URL query parameter for one-click sharing
+- [x] **Share Circuit Link** — Encode circuit state in a URL query parameter for one-click sharing
 
 ---
 
