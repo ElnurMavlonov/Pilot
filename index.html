@@ -845,7 +845,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         function initGraphics() {
             const container = document.getElementById("canvas-view");
             scene = new THREE.Scene();
-            scene.background = new THREE.Color("#020617");
+            scene.background = new THREE.Color("#e8edf2");
 
             // Setup camera metrics
             camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
@@ -866,23 +866,23 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             controls.maxDistance = 20;
 
             // Lights
-            const ambient = new THREE.AmbientLight("#ffffff", 0.4);
+            const ambient = new THREE.AmbientLight("#ffffff", 0.75);
             scene.add(ambient);
 
-            const spot = new THREE.DirectionalLight("#ffffff", 0.9);
+            const spot = new THREE.DirectionalLight("#ffffff", 0.85);
             spot.position.set(5, 12, 5);
             spot.castShadow = true;
             spot.shadow.mapSize.width = 1024;
             spot.shadow.mapSize.height = 1024;
             scene.add(spot);
 
-            // Modern glowing background highlights
-            const pointGlow = new THREE.PointLight("#6366f1", 0.5, 15);
+            // Subtle fill light from opposite direction
+            const pointGlow = new THREE.PointLight("#e0e8ff", 0.2, 15);
             pointGlow.position.set(-3, 2, -3);
             scene.add(pointGlow);
 
             // Workspace Base grids
-            const grid = new THREE.GridHelper(30, 30, "#1e293b", "#0f172a");
+            const grid = new THREE.GridHelper(30, 30, "#b8c4d0", "#cdd5df");
             grid.position.y = -0.05;
             scene.add(grid);
 
@@ -1293,17 +1293,17 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             if(!buzzer) return;
             if(state) {
                 buzzer.position.y = 0.05;
-                renderer.setClearColor(new THREE.Color("#090514"), 1.0);
+                renderer.setClearColor(new THREE.Color("#fef3c7"), 1.0);
             } else {
                 buzzer.position.y = 0;
-                renderer.setClearColor(new THREE.Color("#020617"), 1.0);
+                renderer.setClearColor(new THREE.Color("#e8edf2"), 1.0);
             }
         }
 
         function resetAllComponentOutputs() {
             setLEDOutput(false);
             setBuzzerOutput(false);
-            renderer.setClearColor(new THREE.Color("#020617"), 1.0);
+            renderer.setClearColor(new THREE.Color("#e8edf2"), 1.0);
         }
 
         // Sandbox Interactions
