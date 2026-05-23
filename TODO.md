@@ -33,7 +33,7 @@
 
 - [x] **Sound Simulation** — Use the **Web Audio API** to play actual tones from the buzzer at the correct frequency (880 Hz / 440 Hz for the alarm preset)
 - [x] **Serial Monitor** — Simulate `Serial.println()` output in a mock console panel so users can see debug messages without hardware
-- [ ] **Oscilloscope View** — Simple waveform chart showing PWM duty cycle / analog values in real time
+- [x] **Oscilloscope View** — Simple waveform chart showing PWM duty cycle / analog values in real time
 
 ---
 
