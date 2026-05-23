@@ -1249,6 +1249,7 @@ void loop() {
             { id:'buzzer',      label:'Piezo Buzzer',  icon:'fa-volume-high',   color:'text-amber-600',  bg:'bg-amber-50',    category:'actuators',        type:'buzzer' },
             { id:'button',      label:'Push Button',   icon:'fa-hand-pointer',  color:'text-pink-600',   bg:'bg-pink-50',     category:'sensors',          type:'button' },
             { id:'ldr',         label:'LDR Sensor',    icon:'fa-sun',           color:'text-yellow-600', bg:'bg-yellow-50',   category:'sensors',          type:'ldr' },
+<<<<<<< HEAD
             { id:'res_220',     label:'Resistor 220Ω',       icon:'fa-wave-square',   color:'text-purple-600',  bg:'bg-purple-50',   category:'passive',  type:'resistor',    variant:'220' },
             { id:'res_1k',      label:'Resistor 1kΩ',        icon:'fa-wave-square',   color:'text-violet-600',  bg:'bg-violet-50',   category:'passive',  type:'resistor',    variant:'1k' },
             { id:'res_10k',     label:'Resistor 10kΩ',       icon:'fa-wave-square',   color:'text-fuchsia-600', bg:'bg-fuchsia-50',  category:'passive',  type:'resistor',    variant:'10k' },
@@ -1258,6 +1259,17 @@ void loop() {
             { id:'thermistor',  label:'Thermistor (NTC)',     icon:'fa-temperature-half', color:'text-orange-600', bg:'bg-orange-50', category:'passive',  type:'thermistor' },
             { id:'transistor_npn', label:'Transistor (NPN)', icon:'fa-arrow-right-to-bracket', color:'text-emerald-700', bg:'bg-emerald-50', category:'passive', type:'transistor', variant:'NPN' },
             { id:'transistor_pnp', label:'Transistor (PNP)', icon:'fa-arrow-right-from-bracket', color:'text-teal-700', bg:'bg-teal-50', category:'passive', type:'transistor', variant:'PNP' },
+=======
+            { id:'res_220',     label:'Resistor 220Ω', icon:'fa-wave-square',   color:'text-purple-600', bg:'bg-purple-50',   category:'passive',          type:'resistor', variant:'220' },
+            { id:'res_1k',      label:'Resistor 1kΩ',  icon:'fa-wave-square',   color:'text-violet-600', bg:'bg-violet-50',   category:'passive',          type:'resistor', variant:'1k' },
+            { id:'res_10k',     label:'Resistor 10kΩ', icon:'fa-wave-square',   color:'text-fuchsia-600',bg:'bg-fuchsia-50',  category:'passive',          type:'resistor', variant:'10k' },
+            { id:'cap_e',       label:'Capacitor (E)', icon:'fa-bolt',          color:'text-cyan-600',   bg:'bg-cyan-50',     category:'passive',          type:'capacitor_electro' },
+            { id:'cap_c',       label:'Capacitor (C)', icon:'fa-bolt',          color:'text-teal-600',   bg:'bg-teal-50',     category:'passive',          type:'capacitor_ceramic' },
+            { id:'pot',         label:'Potentiometer', icon:'fa-sliders',       color:'text-emerald-600',bg:'bg-emerald-50',  category:'passive',          type:'potentiometer' },
+            { id:'therm',       label:'Thermistor',    icon:'fa-temperature-half', color:'text-rose-600',bg:'bg-rose-50',    category:'passive',          type:'thermistor' },
+            { id:'npn',         label:'NPN Transistor',icon:'fa-microchip',     color:'text-slate-600',  bg:'bg-slate-100',   category:'passive',          type:'transistor', variant:'npn' },
+            { id:'pnp',         label:'PNP Transistor',icon:'fa-microchip',     color:'text-slate-600',  bg:'bg-slate-100',   category:'passive',          type:'transistor', variant:'pnp' },
+>>>>>>> 71d5a02ba0e16ba64b541e4370d46553aa35699f
         ];
 
         let activePreset = "blink";
@@ -1603,6 +1615,12 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             const _buz   = buildPiezoBuzzer(2.5, 0.8); meshGroup.add(_buz);   customMeshes["buzzer"] = _buz;
             const _btn   = buildButton(2.5, 1.8);      meshGroup.add(_btn);   customMeshes["button"] = _btn;
             const _ldr   = buildLDR(2.5, -1.8);        meshGroup.add(_ldr);   customMeshes["ldr"] = _ldr;
+            const _capE  = buildElectrolyticCapacitor(3.4, 0.2); meshGroup.add(_capE); customMeshes["capacitor_electro"] = _capE;
+            const _capC  = buildCeramicCapacitor(3.4, 1.2); meshGroup.add(_capC); customMeshes["capacitor_ceramic"] = _capC;
+            const _pot   = buildPotentiometer(3.4, -1.8); meshGroup.add(_pot); customMeshes["potentiometer"] = _pot;
+            const _therm = buildThermistor(3.4, -2.8); meshGroup.add(_therm); customMeshes["thermistor"] = _therm;
+            const _npn   = buildTransistor(4.5, 0, 'NPN'); meshGroup.add(_npn); customMeshes["npn"] = _npn;
+            const _pnp   = buildTransistor(4.5, 1.0, 'PNP'); meshGroup.add(_pnp); customMeshes["pnp"] = _pnp;
 
             meshGroup.position.set(0, 0, 0);
 
@@ -2074,6 +2092,117 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             return ldr;
         }
 
+        function buildElectrolyticCapacitor(x = 3.4, z = 0.2) {
+            const cap = new THREE.Group();
+            cap.position.set(x, 0.5, z);
+
+            const bodyGeom = new THREE.CylinderGeometry(0.2, 0.2, 0.6, 16);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: "#1e293b", roughness: 0.6 });
+            const body = new THREE.Mesh(bodyGeom, bodyMat);
+            cap.add(body);
+
+            const stripeGeom = new THREE.CylinderGeometry(0.21, 0.21, 0.6, 16, 1, false, 0, Math.PI/4);
+            const stripeMat = new THREE.MeshBasicMaterial({ color: "#cbd5e1" });
+            const stripe = new THREE.Mesh(stripeGeom, stripeMat);
+            cap.add(stripe);
+
+            const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.5, 8);
+            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
+
+            const pin1 = new THREE.Mesh(leadGeom, metal); pin1.position.set(-0.1, -0.4, 0);
+            const pin2 = new THREE.Mesh(leadGeom, metal); pin2.position.set(0.1, -0.4, 0);
+            cap.add(pin1, pin2);
+
+            return cap;
+        }
+
+        function buildCeramicCapacitor(x = 3.4, z = 1.2) {
+            const cap = new THREE.Group();
+            cap.position.set(x, 0.4, z);
+
+            const bodyGeom = new THREE.CylinderGeometry(0.2, 0.2, 0.1, 16);
+            bodyGeom.rotateX(Math.PI / 2);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: "#ca8a04", roughness: 0.5 });
+            const body = new THREE.Mesh(bodyGeom, bodyMat);
+            cap.add(body);
+
+            const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.4, 8);
+            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
+
+            const pin1 = new THREE.Mesh(leadGeom, metal); pin1.position.set(-0.1, -0.2, 0);
+            const pin2 = new THREE.Mesh(leadGeom, metal); pin2.position.set(0.1, -0.2, 0);
+            cap.add(pin1, pin2);
+
+            return cap;
+        }
+
+        function buildPotentiometer(x = 3.4, z = -1.8) {
+            const pot = new THREE.Group();
+            pot.position.set(x, 0.2, z);
+
+            const bodyGeom = new THREE.BoxGeometry(0.5, 0.2, 0.5);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: "#3b82f6", roughness: 0.7 });
+            const body = new THREE.Mesh(bodyGeom, bodyMat);
+            pot.add(body);
+
+            const shaftGeom = new THREE.CylinderGeometry(0.1, 0.1, 0.3, 16);
+            const shaftMat = new THREE.MeshStandardMaterial({ color: "#f8fafc", roughness: 0.5 });
+            const shaft = new THREE.Mesh(shaftGeom, shaftMat);
+            shaft.position.y = 0.25;
+            pot.add(shaft);
+
+            const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.3, 8);
+            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
+
+            const pin1 = new THREE.Mesh(leadGeom, metal); pin1.position.set(-0.2, -0.15, 0);
+            const pin2 = new THREE.Mesh(leadGeom, metal); pin2.position.set(0, -0.15, 0);
+            const pin3 = new THREE.Mesh(leadGeom, metal); pin3.position.set(0.2, -0.15, 0);
+            pot.add(pin1, pin2, pin3);
+
+            return pot;
+        }
+
+        function buildThermistor(x = 3.4, z = -2.8) {
+            const therm = new THREE.Group();
+            therm.position.set(x, 0.3, z);
+
+            const bobGeom = new THREE.SphereGeometry(0.15, 16, 16);
+            const bobMat = new THREE.MeshStandardMaterial({ color: "#000000", roughness: 0.8 });
+            const bob = new THREE.Mesh(bobGeom, bobMat);
+            therm.add(bob);
+
+            const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.3, 8);
+            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
+
+            const pin1 = new THREE.Mesh(leadGeom, metal); pin1.position.set(-0.08, -0.2, 0);
+            const pin2 = new THREE.Mesh(leadGeom, metal); pin2.position.set(0.08, -0.2, 0);
+            therm.add(pin1, pin2);
+
+            return therm;
+        }
+
+        function buildTransistor(x = 4.5, z = 0, type = 'NPN') {
+            const trans = new THREE.Group();
+            trans.position.set(x, 0.3, z);
+
+            const bodyGeom = new THREE.CylinderGeometry(0.15, 0.15, 0.3, 16, 1, false, 0, Math.PI);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: "#1e293b", roughness: 0.8 });
+            const body = new THREE.Mesh(bodyGeom, bodyMat);
+            body.rotation.z = Math.PI / 2;
+            body.rotation.y = Math.PI / 2;
+            trans.add(body);
+
+            const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.3, 8);
+            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
+
+            const pin1 = new THREE.Mesh(leadGeom, metal); pin1.position.set(-0.1, -0.2, 0);
+            const pin2 = new THREE.Mesh(leadGeom, metal); pin2.position.set(0, -0.2, 0);
+            const pin3 = new THREE.Mesh(leadGeom, metal); pin3.position.set(0.1, -0.2, 0);
+            trans.add(pin1, pin2, pin3);
+
+            return trans;
+        }
+
         function rebuildWiresIn3D(wiresData) {
             activeWireMeshes.forEach(wire => scene.remove(wire));
             activeWireMeshes = [];
@@ -2257,12 +2386,22 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 case 'led':        group = buildLED(x, z, variant || 'red'); break;
                 case 'buzzer':     group = buildPiezoBuzzer(x, z); break;
                 case 'button':     group = buildButton(x, z); break;
+<<<<<<< HEAD
                 case 'ldr':          group = buildLDR(x, z); break;
                 case 'resistor':     group = buildResistor(x, z, variant || '220'); break;
                 case 'capacitor':    group = buildCapacitor(x, z, variant || 'electrolytic'); break;
                 case 'potentiometer':group = buildPotentiometer(x, z); break;
                 case 'thermistor':   group = buildThermistor(x, z); break;
                 case 'transistor':   group = buildTransistor(x, z, variant || 'NPN'); break;
+=======
+                case 'ldr':        group = buildLDR(x, z); break;
+                case 'resistor':   group = buildResistor(x, z, variant || '220'); break;
+                case 'capacitor_electro': group = buildElectrolyticCapacitor(x, z); break;
+                case 'capacitor_ceramic': group = buildCeramicCapacitor(x, z); break;
+                case 'potentiometer': group = buildPotentiometer(x, z); break;
+                case 'thermistor': group = buildThermistor(x, z); break;
+                case 'transistor': group = buildTransistor(x, z, variant || 'npn'); break;
+>>>>>>> 71d5a02ba0e16ba64b541e4370d46553aa35699f
                 default: return null;
             }
 
