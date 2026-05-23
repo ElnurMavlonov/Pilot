@@ -17,14 +17,14 @@ The 3D workspace is procedurally built at runtime using **Three.js r128** — no
 | LED (Red) | Transparent dome cap, polarised pins, emissive light source |
 | Resistor (220 Ω) | Cylindrical body with Red-Red-Brown colour bands and metal leads |
 | Piezo Buzzer | Acoustic barrel with signal/ground pins |
-| Push Button | Plastic casing with a spring-loaded red cap |
-| LDR Sensor | Ceramic disc with photoresistor trace and metal pins |
-| DHT11 | Blue housing with grille face and 4-pin header (temperature & humidity) |
-| HC-SR04 | Green PCB with dual ultrasonic transducers and 4-pin header |
-| PIR Motion Detector | PCB base with white Fresnel dome lens and 3-pin header |
-| Servo Motor (SG90) | Orange micro-servo body with white horn arm and 3-pin header |
-| DC Motor + L298N | Green motor driver PCB with heatsink, DC motor barrel, and spinning shaft |
-| Relay Module | Blue relay on driver board with status LED and 3-pin header |
+| Push Button | Dark base, skirt, red cap, and four corner pins (matches breadboard scale) |
+| LDR Sensor | Ceramic base, glass disc, zigzag photoresistor trace, through-hole pins |
+| DHT11 | Blue shell with vent grid, face plate, label strip, and 4-pin header |
+| HC-SR04 | Green PCB, dual metal transducers with mesh rings, IC, SMD pads, mounting holes |
+| PIR Motion Detector | PCB, sensitivity pot, stacked Fresnel rings, lens dome (motion glow) |
+| Servo Motor (SG90) | Two-part orange body, gear tower, cross horn, signal header, 3-pin header |
+| DC Motor + L298N | Driver PCB with dual chips, caps, heatsink fins, screw terminals, motor + shaft blades |
+| Relay Module | Driver PCB, blue relay coil, translucent cover, indicator LED, screw terminals |
 | Jumper Wires | Colour-coded paths: black (GND), red/yellow/indigo/pink (signal) |
 
 **Camera system:**

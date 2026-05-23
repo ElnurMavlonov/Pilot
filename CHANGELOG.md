@@ -18,6 +18,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Free-build sandbox simulation: servo angle slider, bipolar motor speed slider, relay energize hold button
 - Serial Monitor actuator output; horn rotation, motor shaft spin, driver/relay LED visuals
 
+### Changed — 3D part detailing
+- Shared builders (`partMetalMat`, `partPcbMat`, `addThroughHolePins`, `addSmdPad`) for consistent scale with LEDs, resistors, and breadboard parts
+- Refined meshes for **LDR**, **push button**, **DHT11**, **HC-SR04** (dual transducers + IC/pads), **PIR** (Fresnel rings + lens), **SG90** (two-part body + cross horn), **L298N** (heatsink fins, screw terminals, motor band), and **relay** (coil, cover, indicator LED)
+- Visual simulation hooks preserved (`dhtBody`, `sonarEyeLeft`/`sonarEyeRight`, `pirDome`, `servoHorn`, `driverBoard`, `motorShaft`, `relayLed`)
+
 See [TODO.md](./TODO.md) for the full roadmap.
 
 ---

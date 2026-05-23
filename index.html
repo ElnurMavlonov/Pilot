@@ -698,6 +698,9 @@
                         </button>
                     </div>
                     <div id="interactive-dht-wrapper" class="hidden space-y-2">
+                        <span class="text-[10px] font-bold text-cyan-600 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-temperature-half"></i> DHT11 Climate
+                        </span>
                         <div>
                             <div class="flex justify-between text-[11px] text-slate-600 mb-1">
                                 <span>Temperature</span>
@@ -713,33 +716,48 @@
                             <input id="hw-dht-hum" type="range" min="0" max="100" value="50" oninput="handleDhtHumidity(this.value)" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
                         </div>
                     </div>
-                    <div id="interactive-distance-wrapper" class="hidden">
+                    <div id="interactive-distance-wrapper" class="hidden space-y-2">
+                        <span class="text-[10px] font-bold text-teal-600 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-ruler-horizontal"></i> HC-SR04 Distance
+                        </span>
                         <div class="flex justify-between text-[11px] text-slate-600 mb-1">
-                            <span>Ultrasonic Distance</span>
-                            <span id="distance-val" class="font-bold text-indigo-700">30 cm</span>
+                            <span>Obstacle range</span>
+                            <span id="distance-val" class="font-bold text-indigo-700">100 cm</span>
                         </div>
-                        <input id="hw-distance" type="range" min="2" max="400" value="30" oninput="handleDistanceSlider(this.value)" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                        <input id="hw-distance" type="range" min="2" max="400" value="100" oninput="handleDistanceSlider(this.value)" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-600">
                     </div>
-                    <div id="interactive-pir-wrapper" class="hidden">
+                    <div id="interactive-pir-wrapper" class="hidden space-y-2">
+                        <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-person-walking"></i> PIR Motion
+                        </span>
                         <button id="hw-pir-btn" onmousedown="handlePirMotion(true)" onmouseup="handlePirMotion(false)" onmouseleave="handlePirMotion(false)" ontouchstart="handlePirMotion(true)" ontouchend="handlePirMotion(false)" class="w-full bg-white hover:bg-indigo-50 active:bg-emerald-600 active:text-white border border-indigo-300 py-2.5 rounded-lg text-xs font-semibold text-indigo-700 transition-all flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fa-solid fa-person-walking"></i> Simulate Motion (hold)
                         </button>
                     </div>
-                    <div id="interactive-servo-wrapper" class="hidden">
+                    <div id="interactive-servo-wrapper" class="hidden space-y-2">
+                        <span class="text-[10px] font-bold text-orange-600 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-gear"></i> SG90 Servo
+                        </span>
                         <div class="flex justify-between text-[11px] text-slate-600 mb-1">
-                            <span>Servo Angle</span>
+                            <span>Target angle</span>
                             <span id="servo-angle-val" class="font-bold text-indigo-700">90°</span>
                         </div>
                         <input id="hw-servo-angle" type="range" min="0" max="180" value="90" oninput="handleServoAngle(this.value)" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
                     </div>
-                    <div id="interactive-motor-wrapper" class="hidden">
+                    <div id="interactive-motor-wrapper" class="hidden space-y-2">
+                        <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-fan"></i> L298N Drive
+                        </span>
                         <div class="flex justify-between text-[11px] text-slate-600 mb-1">
-                            <span>Motor Speed (FWD + / REV −)</span>
+                            <span>Speed (FWD + / REV −)</span>
                             <span id="motor-speed-val" class="font-bold text-indigo-700">0%</span>
                         </div>
                         <input id="hw-motor-speed" type="range" min="-100" max="100" value="0" oninput="handleMotorSpeed(this.value)" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
                     </div>
-                    <div id="interactive-relay-wrapper" class="hidden">
+                    <div id="interactive-relay-wrapper" class="hidden space-y-2">
+                        <span class="text-[10px] font-bold text-violet-600 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-toggle-on"></i> Relay Module
+                        </span>
                         <button id="hw-relay-btn" onmousedown="handleRelayToggle(true)" onmouseup="handleRelayToggle(false)" onmouseleave="handleRelayToggle(false)" ontouchstart="handleRelayToggle(true)" ontouchend="handleRelayToggle(false)" class="w-full bg-white hover:bg-indigo-50 active:bg-violet-600 active:text-white border border-indigo-300 py-2.5 rounded-lg text-xs font-semibold text-indigo-700 transition-all flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fa-solid fa-toggle-on"></i> Energize Relay (hold)
                         </button>
@@ -1541,6 +1559,15 @@ void loop() {
             { id:'transistor_pnp', label:'Transistor (PNP)', icon:'fa-arrow-right-from-bracket', color:'text-teal-700', bg:'bg-teal-50', category:'passive', type:'transistor', variant:'PNP' },
         ];
 
+        const PARTS_DEFAULT_STATE = {
+            dht11: { activeTempC: 25, activeHumidity: 50 },
+            hcsr04: { activeDistanceCm: 100 },
+            pir: { activePirMotion: false },
+            servo: { activeServoAngle: 90 },
+            motor_l298n: { activeMotorSpeed: 0 },
+            relay: { activeRelayOn: false }
+        };
+
         let activePreset = "blink";
         let activeStep = 0;
         let isSimulating = false;
@@ -1551,14 +1578,43 @@ void loop() {
         let meshGroup;
         let activeLdrLevel = 50;
         let activeButtonState = false;
-        let activeTempC = 25;
-        let activeHumidity = 50;
-        let activeDistanceCm = 30;
-        let activePirMotion = false;
-        let activeServoAngle = 90;
-        let activeMotorSpeed = 0;
-        let activeRelayOn = false;
+        const freeBuildState = {
+            activeTempC: 25,
+            activeHumidity: 50,
+            activeDistanceCm: 100,
+            activePirMotion: false,
+            activeServoAngle: 90,
+            activeMotorSpeed: 0,
+            activeRelayOn: false
+        };
         let lastRenderTime = performance.now();
+
+        function resetFreeBuildState() {
+            freeBuildState.activeTempC = 25;
+            freeBuildState.activeHumidity = 50;
+            freeBuildState.activeDistanceCm = 100;
+            freeBuildState.activePirMotion = false;
+            freeBuildState.activeServoAngle = 90;
+            freeBuildState.activeMotorSpeed = 0;
+            freeBuildState.activeRelayOn = false;
+        }
+
+        function syncFreeBuildControlUI() {
+            const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+            set('dht-temp-val', `${freeBuildState.activeTempC}°C`);
+            set('dht-hum-val', `${freeBuildState.activeHumidity}%`);
+            set('distance-val', `${freeBuildState.activeDistanceCm} cm`);
+            set('servo-angle-val', `${freeBuildState.activeServoAngle}°`);
+            const ms = freeBuildState.activeMotorSpeed;
+            if (ms === 0) set('motor-speed-val', '0% (STOP)');
+            else set('motor-speed-val', `${ms >= 0 ? 'FWD' : 'REV'} ${Math.abs(ms)}%`);
+            const sld = (id, val) => { const el = document.getElementById(id); if (el) el.value = String(val); };
+            sld('hw-dht-temp', freeBuildState.activeTempC);
+            sld('hw-dht-hum', freeBuildState.activeHumidity);
+            sld('hw-distance', freeBuildState.activeDistanceCm);
+            sld('hw-servo-angle', freeBuildState.activeServoAngle);
+            sld('hw-motor-speed', freeBuildState.activeMotorSpeed);
+        }
 
         // Custom meshes stored globally for access/anim
         let customMeshes = {};
@@ -2032,6 +2088,34 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         // ========================================================
         // 3D MODEL BUILDERS (Procedural Geometry)
         // ========================================================
+        function partMetalMat() {
+            return new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.92, roughness: 0.12 });
+        }
+
+        function partPcbMat(color = "#1e3a5f") {
+            return new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.06 });
+        }
+
+        function addThroughHolePins(group, xPositions, y = 0.1, len = 0.36, r = 0.014) {
+            const geom = new THREE.CylinderGeometry(r, r, len, 8);
+            const mat = partMetalMat();
+            xPositions.forEach(px => {
+                const pin = new THREE.Mesh(geom, mat);
+                pin.position.set(px, y, 0);
+                pin.castShadow = true;
+                group.add(pin);
+            });
+        }
+
+        function addSmdPad(group, x, y, z, w = 0.06, d = 0.04) {
+            const pad = new THREE.Mesh(
+                new THREE.BoxGeometry(w, 0.008, d),
+                new THREE.MeshStandardMaterial({ color: "#94a3b8", metalness: 0.85, roughness: 0.2 })
+            );
+            pad.position.set(x, y, z);
+            group.add(pad);
+        }
+
         function buildArduinoBoard(x = -2.5, z = 0) {
             const board = new THREE.Group();
             board.position.set(x, 0, z);
@@ -2368,237 +2452,414 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         }
 
         function buildButton(x = 2.5, z = 1.8) {
-            const btn = new THREE.Group();
-            btn.position.set(x, 0.13, z);
-
-            const casingGeom = new THREE.BoxGeometry(0.45, 0.2, 0.45);
-            const casingMat = new THREE.MeshStandardMaterial({ color: "#1e293b", roughness: 0.7 });
-            const casing = new THREE.Mesh(casingGeom, casingMat);
-            casing.position.y = 0.1;
-            btn.add(casing);
-
-            const capGeom = new THREE.CylinderGeometry(0.12, 0.12, 0.15, 12);
-            const capMat = new THREE.MeshStandardMaterial({ color: "#f43f5e", roughness: 0.2 });
-            const cap = new THREE.Mesh(capGeom, capMat);
-            cap.position.y = 0.25;
-            btn.add(cap);
-
-            return btn;
-        }
-
-        function buildLDR(x = 2.5, z = -1.8) {
-            const ldr = new THREE.Group();
-            ldr.position.set(x, 0.2, z);
-
-            const headGeom = new THREE.CylinderGeometry(0.2, 0.2, 0.08, 16);
-            const headMat = new THREE.MeshStandardMaterial({ color: "#e2e8f0", roughness: 0.5 });
-            const head = new THREE.Mesh(headGeom, headMat);
-            head.position.y = 0.4;
-            ldr.add(head);
-
-            const lineGeom = new THREE.BoxGeometry(0.15, 0.02, 0.03);
-            const lineMat = new THREE.MeshBasicMaterial({ color: "#f97316" });
-            const l1 = new THREE.Mesh(lineGeom, lineMat);
-            l1.position.set(0, 0.45, 0);
-            ldr.add(l1);
-
-            const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.4, 8);
-            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
-            const pin1 = new THREE.Mesh(leadGeom, metal); pin1.position.set(-0.1, 0.2, 0);
-            const pin2 = new THREE.Mesh(leadGeom, metal); pin2.position.set(0.1, 0.2, 0);
-            ldr.add(pin1, pin2);
-
-            return ldr;
-        }
-
-        function buildDHT11(x = 4.5, z = -1.5) {
             const g = new THREE.Group();
-            g.position.set(x, 0.25, z);
+            g.position.set(x, 0.12, z);
 
-            const bodyGeom = new THREE.BoxGeometry(0.55, 0.7, 0.25);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: "#1d4ed8", roughness: 0.6, emissive: 0x000000, emissiveIntensity: 0.3 });
-            const body = new THREE.Mesh(bodyGeom, bodyMat);
-            body.position.y = 0.35;
-            body.name = 'dhtBody';
-            g.add(body);
+            const casing = new THREE.Mesh(
+                new THREE.BoxGeometry(0.48, 0.14, 0.48),
+                new THREE.MeshStandardMaterial({ color: "#1e293b", roughness: 0.75 })
+            );
+            casing.position.y = 0.08;
+            casing.castShadow = true;
+            g.add(casing);
 
-            const grilleGeom = new THREE.BoxGeometry(0.4, 0.35, 0.02);
-            const grilleMat = new THREE.MeshBasicMaterial({ color: "#93c5fd" });
-            const grille = new THREE.Mesh(grilleGeom, grilleMat);
-            grille.position.set(0, 0.35, 0.13);
-            g.add(grille);
+            const skirt = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.14, 0.16, 0.06, 16),
+                new THREE.MeshStandardMaterial({ color: "#334155", roughness: 0.6 })
+            );
+            skirt.position.y = 0.18;
+            g.add(skirt);
 
-            const leadGeom = new THREE.CylinderGeometry(0.012, 0.012, 0.35, 8);
-            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
-            [-0.15, -0.05, 0.05, 0.15].forEach(px => {
-                const pin = new THREE.Mesh(leadGeom, metal);
-                pin.position.set(px, 0.12, 0);
+            const cap = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.11, 0.12, 0.1, 16),
+                new THREE.MeshStandardMaterial({ color: "#f43f5e", roughness: 0.25 })
+            );
+            cap.position.y = 0.26;
+            g.add(cap);
+
+            [[-0.17, -0.17], [0.17, -0.17], [-0.17, 0.17], [0.17, 0.17]].forEach(([px, pz]) => {
+                const pin = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.012, 0.012, 0.32, 8),
+                    partMetalMat()
+                );
+                pin.position.set(px, 0.06, pz);
                 g.add(pin);
             });
 
             return g;
         }
 
-        function buildHCSR04(x = 4.5, z = 0) {
+        function buildLDR(x = 2.5, z = -1.8) {
+            const g = new THREE.Group();
+            g.position.set(x, 0.15, z);
+
+            const base = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.22, 0.24, 0.06, 16),
+                new THREE.MeshStandardMaterial({ color: "#f1f5f9", roughness: 0.7 })
+            );
+            base.position.y = 0.22;
+            base.castShadow = true;
+            g.add(base);
+
+            const disc = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.18, 0.18, 0.03, 20),
+                new THREE.MeshStandardMaterial({ color: "#e2e8f0", roughness: 0.25, metalness: 0.1 })
+            );
+            disc.position.y = 0.3;
+            g.add(disc);
+
+            const traceMat = new THREE.MeshBasicMaterial({ color: "#f97316" });
+            for (let i = -2; i <= 2; i++) {
+                const seg = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.008, 0.012), traceMat);
+                seg.position.set(i * 0.03, 0.32, 0);
+                g.add(seg);
+                const segZ = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.008, 0.1), traceMat);
+                segZ.position.set(i * 0.035, 0.32, 0);
+                g.add(segZ);
+            }
+
+            addThroughHolePins(g, [-0.1, 0.1], 0.12, 0.42);
+
+            return g;
+        }
+
+        function buildDHT11(x = 4.5, z = -1.5) {
             const g = new THREE.Group();
             g.position.set(x, 0.2, z);
 
-            const pcbGeom = new THREE.BoxGeometry(1.0, 0.08, 0.55);
-            const pcbMat = new THREE.MeshStandardMaterial({ color: "#15803d", roughness: 0.7 });
-            const pcb = new THREE.Mesh(pcbGeom, pcbMat);
-            pcb.position.y = 0.2;
+            const bodyMat = new THREE.MeshStandardMaterial({ color: "#0c4a8a", roughness: 0.45, emissive: 0x000000, emissiveIntensity: 0.12 });
+            const shell = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.62, 0.24), bodyMat);
+            shell.position.y = 0.34;
+            shell.name = 'dhtBody';
+            shell.castShadow = true;
+            g.add(shell);
+
+            const lip = new THREE.Mesh(
+                new THREE.BoxGeometry(0.54, 0.04, 0.26),
+                new THREE.MeshStandardMaterial({ color: "#1d4ed8", roughness: 0.5 })
+            );
+            lip.position.y = 0.66;
+            g.add(lip);
+
+            const face = new THREE.Mesh(
+                new THREE.BoxGeometry(0.38, 0.32, 0.02),
+                new THREE.MeshStandardMaterial({ color: "#1e40af", roughness: 0.55 })
+            );
+            face.position.set(0, 0.36, 0.125);
+            g.add(face);
+
+            const grillMat = new THREE.MeshBasicMaterial({ color: "#7dd3fc" });
+            for (let row = 0; row < 4; row++) {
+                for (let col = 0; col < 3; col++) {
+                    const slot = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.018, 0.015), grillMat);
+                    slot.position.set(-0.1 + col * 0.1, 0.28 + row * 0.07, 0.135);
+                    g.add(slot);
+                }
+            }
+
+            const label = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, 0.06, 0.01),
+                new THREE.MeshBasicMaterial({ color: "#f8fafc" })
+            );
+            label.position.set(0, 0.58, 0.13);
+            g.add(label);
+
+            addThroughHolePins(g, [-0.14, -0.05, 0.05, 0.14], 0.1, 0.34);
+
+            return g;
+        }
+
+        function buildSonarTransducer(parent, name, px) {
+            const housing = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.15, 0.16, 0.1, 20),
+                new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.55, roughness: 0.35, emissive: 0x000000, emissiveIntensity: 0.15 })
+            );
+            housing.name = name;
+            housing.position.set(px, 0.34, 0);
+            housing.castShadow = true;
+            parent.add(housing);
+
+            const mesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.09, 0.07, 0.04, 16),
+                new THREE.MeshStandardMaterial({ color: "#64748b", metalness: 0.4, roughness: 0.5 })
+            );
+            mesh.position.set(px, 0.38, 0);
+            parent.add(mesh);
+
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(0.11, 0.012, 10, 20),
+                new THREE.MeshStandardMaterial({ color: "#94a3b8", metalness: 0.7, roughness: 0.25 })
+            );
+            ring.rotation.x = Math.PI / 2;
+            ring.position.set(px, 0.36, 0);
+            parent.add(ring);
+        }
+
+        function buildHCSR04(x = 4.5, z = 0) {
+            const g = new THREE.Group();
+            g.position.set(x, 0.18, z);
+
+            const pcb = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.07, 0.52), partPcbMat("#14532d"));
+            pcb.position.y = 0.18;
+            pcb.castShadow = true;
             g.add(pcb);
 
-            const eyeGeom = new THREE.CylinderGeometry(0.14, 0.14, 0.12, 16);
-            const eyeMat = new THREE.MeshStandardMaterial({ color: "#e2e8f0", metalness: 0.6, roughness: 0.3, emissive: 0x000000, emissiveIntensity: 0.2 });
-            const eyeL = new THREE.Mesh(eyeGeom, eyeMat.clone());
-            eyeL.name = 'sonarEye';
-            eyeL.position.set(-0.22, 0.32, 0);
-            const eyeR = new THREE.Mesh(eyeGeom, eyeMat.clone());
-            eyeR.name = 'sonarEye';
-            eyeR.position.set(0.22, 0.32, 0);
-            g.add(eyeL, eyeR);
+            buildSonarTransducer(g, 'sonarEyeLeft', -0.24);
+            buildSonarTransducer(g, 'sonarEyeRight', 0.24);
 
-            const leadGeom = new THREE.CylinderGeometry(0.012, 0.012, 0.3, 8);
-            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
-            [-0.3, -0.1, 0.1, 0.3].forEach(px => {
-                const pin = new THREE.Mesh(leadGeom, metal);
-                pin.position.set(px, 0.05, 0);
-                g.add(pin);
+            const ic = new THREE.Mesh(
+                new THREE.BoxGeometry(0.12, 0.04, 0.1),
+                new THREE.MeshStandardMaterial({ color: "#0f172a", roughness: 0.8 })
+            );
+            ic.position.set(0, 0.24, 0);
+            g.add(ic);
+            addSmdPad(g, -0.05, 0.22, 0.02);
+            addSmdPad(g, 0.05, 0.22, -0.02);
+
+            [-0.38, 0.38].forEach(px => {
+                const hole = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.02, 0.02, 0.08, 8),
+                    new THREE.MeshBasicMaterial({ color: "#1e293b" })
+                );
+                hole.position.set(px, 0.18, 0.2);
+                g.add(hole);
             });
+
+            addThroughHolePins(g, [-0.32, -0.11, 0.11, 0.32], 0.06, 0.28);
 
             return g;
         }
 
         function buildPIR(x = 4.5, z = 1.5) {
             const g = new THREE.Group();
-            g.position.set(x, 0.15, z);
+            g.position.set(x, 0.14, z);
 
-            const pcbGeom = new THREE.BoxGeometry(0.55, 0.06, 0.45);
-            const pcbMat = new THREE.MeshStandardMaterial({ color: "#166534", roughness: 0.7 });
-            const pcb = new THREE.Mesh(pcbGeom, pcbMat);
-            pcb.position.y = 0.15;
+            const pcb = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.055, 0.42), partPcbMat("#166534"));
+            pcb.position.y = 0.14;
+            pcb.castShadow = true;
             g.add(pcb);
 
-            const domeGeom = new THREE.SphereGeometry(0.22, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2);
-            const domeMat = new THREE.MeshStandardMaterial({ color: "#f8fafc", roughness: 0.4, emissive: 0x000000, emissiveIntensity: 0 });
-            const dome = new THREE.Mesh(domeGeom, domeMat);
-            dome.name = 'pirDome';
-            dome.position.y = 0.28;
-            g.add(dome);
+            const pot = new THREE.Mesh(
+                new THREE.BoxGeometry(0.08, 0.05, 0.08),
+                new THREE.MeshStandardMaterial({ color: "#475569", roughness: 0.6 })
+            );
+            pot.position.set(0.16, 0.2, -0.1);
+            g.add(pot);
 
-            const leadGeom = new THREE.CylinderGeometry(0.012, 0.012, 0.3, 8);
-            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
-            [-0.12, 0, 0.12].forEach(px => {
-                const pin = new THREE.Mesh(leadGeom, metal);
-                pin.position.set(px, 0, 0);
-                g.add(pin);
-            });
+            const domeMat = new THREE.MeshStandardMaterial({ color: "#f8fafc", roughness: 0.85, emissive: 0x000000, emissiveIntensity: 0 });
+            for (let i = 0; i < 4; i++) {
+                const ring = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.08 + i * 0.035, 0.008, 8, 24),
+                    domeMat
+                );
+                ring.rotation.x = Math.PI / 2;
+                ring.position.y = 0.26 + i * 0.012;
+                ring.castShadow = i === 3;
+                g.add(ring);
+            }
+
+            const lens = new THREE.Mesh(
+                new THREE.SphereGeometry(0.06, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+                domeMat
+            );
+            lens.name = 'pirDome';
+            lens.position.y = 0.3;
+            lens.castShadow = true;
+            g.add(lens);
+
+            addThroughHolePins(g, [-0.11, 0, 0.11], 0.05, 0.3);
 
             return g;
         }
 
         function buildServo(x = 5.5, z = -1.5) {
             const g = new THREE.Group();
-            g.position.set(x, 0.2, z);
+            g.position.set(x, 0.18, z);
 
-            const bodyGeom = new THREE.BoxGeometry(0.5, 0.55, 0.45);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: "#ea580c", roughness: 0.65 });
-            const body = new THREE.Mesh(bodyGeom, bodyMat);
-            body.position.y = 0.28;
-            g.add(body);
+            const orange = new THREE.MeshStandardMaterial({ color: "#ea580c", roughness: 0.45 });
+            const base = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.24, 0.42), orange);
+            base.position.y = 0.14;
+            base.castShadow = true;
+            g.add(base);
 
-            const hornGeom = new THREE.BoxGeometry(0.08, 0.04, 0.35);
-            const hornMat = new THREE.MeshStandardMaterial({ color: "#f8fafc", roughness: 0.4 });
-            const horn = new THREE.Mesh(hornGeom, hornMat);
-            horn.name = 'servoHorn';
-            horn.position.set(0, 0.58, 0.12);
-            g.add(horn);
+            const top = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.28, 0.4), orange);
+            top.position.y = 0.4;
+            top.castShadow = true;
+            g.add(top);
 
-            const leadGeom = new THREE.CylinderGeometry(0.012, 0.012, 0.3, 8);
-            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
-            [-0.12, 0, 0.12].forEach(px => {
-                const pin = new THREE.Mesh(leadGeom, metal);
-                pin.position.set(px, 0.05, 0);
-                g.add(pin);
+            const seam = new THREE.Mesh(
+                new THREE.BoxGeometry(0.47, 0.01, 0.41),
+                new THREE.MeshStandardMaterial({ color: "#c2410c", roughness: 0.5 })
+            );
+            seam.position.y = 0.28;
+            g.add(seam);
+
+            const tower = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.09, 0.1, 0.1, 14),
+                orange
+            );
+            tower.position.set(0, 0.56, 0.06);
+            g.add(tower);
+
+            const hornGroup = new THREE.Group();
+            hornGroup.name = 'servoHorn';
+            hornGroup.position.set(0, 0.6, 0.08);
+            const white = new THREE.MeshStandardMaterial({ color: "#f8fafc", roughness: 0.55 });
+            const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.035, 16), white);
+            hub.rotation.x = Math.PI / 2;
+            hornGroup.add(hub);
+            [[0.16, 0], [-0.16, 0], [0, 0.16], [0, -0.16]].forEach(([ax, az], i) => {
+                const arm = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.16, 0.025), white);
+                arm.position.set(ax, 0.02, az);
+                if (i % 2 === 1) arm.rotation.y = Math.PI / 2;
+                hornGroup.add(arm);
             });
+            g.add(hornGroup);
+
+            const header = new THREE.Mesh(
+                new THREE.BoxGeometry(0.22, 0.08, 0.1),
+                new THREE.MeshStandardMaterial({ color: "#fef3c7", roughness: 0.7 })
+            );
+            header.position.set(0, 0.12, -0.22);
+            g.add(header);
+
+            addThroughHolePins(g, [-0.1, 0, 0.1], 0.04, 0.28);
 
             return g;
         }
 
         function buildMotorL298n(x = 5.5, z = 0) {
             const g = new THREE.Group();
-            g.position.set(x, 0.15, z);
+            g.position.set(x, 0.14, z);
 
-            const driverGeom = new THREE.BoxGeometry(1.1, 0.12, 0.85);
-            const driverMat = new THREE.MeshStandardMaterial({ color: "#15803d", roughness: 0.7, emissive: 0x000000, emissiveIntensity: 0 });
-            const driver = new THREE.Mesh(driverGeom, driverMat);
+            const driverMat = new THREE.MeshStandardMaterial({ color: "#14532d", roughness: 0.55, emissive: 0x000000, emissiveIntensity: 0 });
+            const driver = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.1, 0.8), driverMat);
             driver.name = 'driverBoard';
-            driver.position.y = 0.2;
+            driver.position.y = 0.18;
+            driver.castShadow = true;
             g.add(driver);
 
-            const finGeom = new THREE.BoxGeometry(0.15, 0.14, 0.5);
-            const finMat = new THREE.MeshStandardMaterial({ color: "#64748b", metalness: 0.5 });
-            const fin = new THREE.Mesh(finGeom, finMat);
-            fin.position.set(0, 0.28, 0);
-            g.add(fin);
+            const chipMat = new THREE.MeshStandardMaterial({ color: "#0f172a", roughness: 0.7 });
+            [[-0.15, 0.1], [0.15, -0.08]].forEach(([cx, cz]) => {
+                const chip = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.05, 0.16), chipMat);
+                chip.position.set(cx, 0.24, cz);
+                g.add(chip);
+            });
 
-            const motorGeom = new THREE.CylinderGeometry(0.22, 0.22, 0.35, 16);
-            const motorMat = new THREE.MeshStandardMaterial({ color: "#1e293b", roughness: 0.6 });
-            const motor = new THREE.Mesh(motorGeom, motorMat);
-            motor.rotation.z = Math.PI / 2;
-            motor.position.set(0.75, 0.35, 0);
-            g.add(motor);
+            const capMat = new THREE.MeshStandardMaterial({ color: "#ca8a04", roughness: 0.5 });
+            [[-0.28, -0.2], [0.28, 0.2]].forEach(([cx, cz]) => {
+                const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.1, 10), capMat);
+                cap.position.set(cx, 0.24, cz);
+                g.add(cap);
+            });
 
-            const shaftGeom = new THREE.CylinderGeometry(0.04, 0.04, 0.2, 12);
-            const shaftMat = new THREE.MeshStandardMaterial({ color: "#94a3b8", metalness: 0.8 });
-            const shaft = new THREE.Mesh(shaftGeom, shaftMat);
+            for (let i = 0; i < 5; i++) {
+                const fin = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.04, 0.1, 0.38),
+                    new THREE.MeshStandardMaterial({ color: "#64748b", metalness: 0.85, roughness: 0.25 })
+                );
+                fin.position.set(-0.08 + i * 0.04, 0.28, 0.12);
+                g.add(fin);
+            }
+
+            const termMat = new THREE.MeshStandardMaterial({ color: "#b45309", roughness: 0.6 });
+            [-0.35, -0.12, 0.12, 0.35].forEach(px => {
+                const block = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.08, 0.12), termMat);
+                block.position.set(px, 0.2, -0.38);
+                g.add(block);
+                const screw = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.025, 0.025, 0.02, 8),
+                    partMetalMat()
+                );
+                screw.rotation.x = Math.PI / 2;
+                screw.position.set(px, 0.22, -0.44);
+                g.add(screw);
+            });
+
+            const motorBody = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.2, 0.2, 0.32, 18),
+                new THREE.MeshStandardMaterial({ color: "#1e293b", roughness: 0.55 })
+            );
+            motorBody.rotation.z = Math.PI / 2;
+            motorBody.position.set(0.72, 0.32, 0);
+            g.add(motorBody);
+
+            const band = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.205, 0.205, 0.04, 18),
+                new THREE.MeshStandardMaterial({ color: "#475569", metalness: 0.5 })
+            );
+            band.rotation.z = Math.PI / 2;
+            band.position.set(0.72, 0.32, 0);
+            g.add(band);
+
+            const shaft = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.035, 0.035, 0.2, 12),
+                new THREE.MeshStandardMaterial({ color: "#e2e8f0", metalness: 0.92, roughness: 0.08 })
+            );
             shaft.name = 'motorShaft';
             shaft.rotation.z = Math.PI / 2;
-            shaft.position.set(0.95, 0.35, 0);
+            shaft.position.set(0.9, 0.32, 0);
+            [[0.09, 0], [0, 0.09]].forEach(([py, pz]) => {
+                const blade = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.12, 0.015, 0.015),
+                    new THREE.MeshBasicMaterial({ color: "#ffffff" })
+                );
+                blade.position.set(0, py, pz);
+                shaft.add(blade);
+            });
             g.add(shaft);
 
-            const leadGeom = new THREE.CylinderGeometry(0.01, 0.01, 0.25, 6);
-            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
-            [-0.4, -0.2, 0, 0.2, 0.4].forEach(px => {
-                const pin = new THREE.Mesh(leadGeom, metal);
-                pin.position.set(px, 0.08, -0.35);
-                g.add(pin);
-            });
+            addThroughHolePins(g, [-0.42, -0.21, 0, 0.21, 0.42], 0.05, 0.22);
 
             return g;
         }
 
         function buildRelay(x = 5.5, z = 1.5) {
             const g = new THREE.Group();
-            g.position.set(x, 0.15, z);
+            g.position.set(x, 0.12, z);
 
-            const boardGeom = new THREE.BoxGeometry(0.65, 0.06, 0.9);
-            const boardMat = new THREE.MeshStandardMaterial({ color: "#1e3a5f", roughness: 0.7 });
-            const board = new THREE.Mesh(boardGeom, boardMat);
-            board.position.y = 0.12;
-            g.add(board);
+            const pcb = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.055, 0.88), partPcbMat("#1e3a5f"));
+            pcb.position.y = 0.12;
+            pcb.castShadow = true;
+            g.add(pcb);
 
-            const relayGeom = new THREE.BoxGeometry(0.35, 0.35, 0.5);
-            const relayMat = new THREE.MeshStandardMaterial({ color: "#1d4ed8", roughness: 0.5 });
-            const relayBox = new THREE.Mesh(relayGeom, relayMat);
-            relayBox.position.set(-0.05, 0.35, 0);
-            g.add(relayBox);
+            const relayMat = new THREE.MeshStandardMaterial({ color: "#1d4ed8", roughness: 0.4 });
+            const coil = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.32, 0.46), relayMat);
+            coil.position.set(-0.04, 0.34, 0);
+            coil.castShadow = true;
+            g.add(coil);
 
-            const ledGeom = new THREE.SphereGeometry(0.05, 12, 12);
-            const ledMat = new THREE.MeshStandardMaterial({ color: "#ef4444", emissive: 0x000000, emissiveIntensity: 0 });
-            const led = new THREE.Mesh(ledGeom, ledMat);
+            const cover = new THREE.Mesh(
+                new THREE.BoxGeometry(0.3, 0.04, 0.44),
+                new THREE.MeshStandardMaterial({ color: "#3b82f6", roughness: 0.35, transparent: true, opacity: 0.75 })
+            );
+            cover.position.set(-0.04, 0.52, 0);
+            g.add(cover);
+
+            const ledSocket = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.035, 0.035, 0.02, 12),
+                new THREE.MeshStandardMaterial({ color: "#1e293b", roughness: 0.8 })
+            );
+            ledSocket.rotation.x = Math.PI / 2;
+            ledSocket.position.set(0.2, 0.2, 0.32);
+            g.add(ledSocket);
+
+            const led = new THREE.Mesh(
+                new THREE.SphereGeometry(0.028, 10, 10),
+                new THREE.MeshStandardMaterial({ color: "#7f1d1d", emissive: 0x000000, emissiveIntensity: 0 })
+            );
             led.name = 'relayLed';
-            led.position.set(0.22, 0.22, 0.35);
+            led.position.set(0.2, 0.22, 0.34);
             g.add(led);
 
-            const leadGeom = new THREE.CylinderGeometry(0.012, 0.012, 0.28, 8);
-            const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
-            [-0.2, 0, 0.2].forEach(px => {
-                const pin = new THREE.Mesh(leadGeom, metal);
-                pin.position.set(px, 0, -0.35);
-                g.add(pin);
+            const termMat = new THREE.MeshStandardMaterial({ color: "#94a3b8", metalness: 0.75, roughness: 0.3 });
+            [-0.22, 0.22].forEach(px => {
+                const term = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.08), termMat);
+                term.position.set(px, 0.18, -0.38);
+                g.add(term);
             });
+
+            addThroughHolePins(g, [-0.18, 0, 0.18], 0.02, 0.28);
 
             return g;
         }
@@ -2756,16 +3017,8 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 stopOscilloscope();
                 resetAllComponentOutputs();
                 stopBuzzerTone();
-                activePirMotion = false;
-                activeMotorSpeed = 0;
-                activeRelayOn = false;
-                activeServoAngle = 90;
-                const servoSlider = document.getElementById('hw-servo-angle');
-                const motorSlider = document.getElementById('hw-motor-speed');
-                if (servoSlider) servoSlider.value = '90';
-                if (motorSlider) motorSlider.value = '0';
-                document.getElementById('servo-angle-val') && (document.getElementById('servo-angle-val').textContent = '90°');
-                document.getElementById('motor-speed-val') && (document.getElementById('motor-speed-val').textContent = '0%');
+                resetFreeBuildState();
+                syncFreeBuildControlUI();
                 resetPlacedSensorVisuals();
                 if (isFreeBuildMode) {
                     hideFreeBuildControlWrappers();
@@ -2796,15 +3049,15 @@ Return ONLY a valid JSON object matching this TypeScript structure:
 
                 if (isFreeBuildMode) {
                     const types = new Set(placedComponents.map(g => g.userData.type));
-                    if (types.has('dht11')) appendSerial(`DHT11 → Temp: ${activeTempC}°C  Humidity: ${activeHumidity}%`);
-                    if (types.has('hcsr04')) appendSerial(`HC-SR04 → Distance: ${activeDistanceCm} cm`);
-                    if (types.has('pir')) appendSerial(`PIR → ${activePirMotion ? 'MOTION detected' : 'No motion'}`);
-                    if (types.has('servo')) appendSerial(`Servo → Angle: ${activeServoAngle}°`);
+                    if (types.has('dht11')) appendSerial(`DHT11 → Temp: ${freeBuildState.activeTempC}°C  Humidity: ${freeBuildState.activeHumidity}%`);
+                    if (types.has('hcsr04')) appendSerial(`HC-SR04 → Distance: ${freeBuildState.activeDistanceCm} cm`);
+                    if (types.has('pir')) appendSerial(`PIR → ${freeBuildState.activePirMotion ? 'MOTION detected' : 'No motion'}`);
+                    if (types.has('servo')) appendSerial(`Servo → Angle: ${freeBuildState.activeServoAngle}°`);
                     if (types.has('motor_l298n')) {
-                        const dir = activeMotorSpeed >= 0 ? 'FWD' : 'REV';
-                        appendSerial(`Motor → ${dir} speed: ${Math.abs(activeMotorSpeed)}%`);
+                        const dir = freeBuildState.activeMotorSpeed >= 0 ? 'FWD' : 'REV';
+                        appendSerial(`Motor → ${dir} speed: ${Math.abs(freeBuildState.activeMotorSpeed)}%`);
                     }
-                    if (types.has('relay')) appendSerial(`Relay → ${activeRelayOn ? 'ON (energized)' : 'OFF'}`);
+                    if (types.has('relay')) appendSerial(`Relay → ${freeBuildState.activeRelayOn ? 'ON (energized)' : 'OFF'}`);
                     if (!FREE_BUILD_INTERACTIVE_TYPES.some(t => types.has(t))) {
                         appendSerial('Free build: place a sensor or actuator to see activity');
                     }
@@ -2873,6 +3126,13 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             resetPlacedSensorVisuals();
         }
 
+        function resetSonarEyes(mesh) {
+            if (!mesh || !mesh.material) return;
+            mesh.scale.set(1, 1, 1);
+            mesh.material.emissive.setHex(0x000000);
+            mesh.material.emissiveIntensity = 0.2;
+        }
+
         function resetPlacedSensorVisuals() {
             placedComponents.forEach(g => {
                 g.traverse(child => {
@@ -2880,10 +3140,8 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                         child.material.emissive.setHex(0x000000);
                         child.material.emissiveIntensity = 0.15;
                     }
-                    if (child.name === 'sonarEye' && child.material) {
-                        child.scale.set(1, 1, 1);
-                        child.material.emissive.setHex(0x000000);
-                        child.material.emissiveIntensity = 0.2;
+                    if (child.name === 'sonarEye' || child.name === 'sonarEyeLeft' || child.name === 'sonarEyeRight') {
+                        resetSonarEyes(child);
                     }
                     if (child.name === 'pirDome' && child.material) {
                         child.material.emissive.setHex(0x000000);
@@ -2908,38 +3166,42 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         }
 
         function updatePlacedSensorVisuals() {
-            const tempT = activeTempC / 50;
-            const tempR = Math.round(30 + tempT * 225);
-            const tempG = Math.round(58 + (1 - tempT) * 100);
-            const tempB = Math.round(138 + (1 - tempT) * 100);
-            const tempHex = (tempR << 16) | (tempG << 8) | tempB;
-            const sonarScale = 0.85 + ((400 - activeDistanceCm) / 400) * 0.35;
+            const tempT = freeBuildState.activeTempC / 50;
+            const nearObstacle = freeBuildState.activeDistanceCm < 50;
+            const pulsate = (Math.sin(Date.now() * 0.01) + 1) / 2;
 
             placedComponents.forEach(g => {
                 if (g.userData.type === 'dht11') {
                     g.traverse(child => {
                         if (child.name === 'dhtBody' && child.material) {
-                            child.material.emissive.setHex(tempHex);
-                            child.material.emissiveIntensity = 0.25 + tempT * 0.35;
+                            child.material.emissive.setRGB(tempT * 0.5, 0, 0);
+                            child.material.emissiveIntensity = 0.2 + tempT * 0.4;
                         }
                     });
                 }
                 if (g.userData.type === 'hcsr04') {
-                    g.traverse(child => {
-                        if (child.name === 'sonarEye') {
-                            child.scale.set(1, sonarScale, 1);
-                            if (child.material) {
-                                const near = activeDistanceCm < 50;
-                                child.material.emissive.setHex(near ? 0x22d3ee : 0x000000);
-                                child.material.emissiveIntensity = near ? 0.5 : 0.2;
-                            }
+                    const applyEye = (eye) => {
+                        if (!eye || !eye.material) return;
+                        if (nearObstacle) {
+                            eye.material.emissive.setRGB(0, pulsate * 0.4, pulsate * 0.4);
+                            eye.material.emissiveIntensity = 0.5;
+                            eye.scale.set(1, 1, 1.12);
+                        } else {
+                            eye.material.emissive.setHex(0x000000);
+                            eye.material.emissiveIntensity = 0.2;
+                            eye.scale.set(1, 1, 1);
                         }
+                    };
+                    applyEye(g.getObjectByName('sonarEyeLeft'));
+                    applyEye(g.getObjectByName('sonarEyeRight'));
+                    g.traverse(child => {
+                        if (child.name === 'sonarEye') applyEye(child);
                     });
                 }
                 if (g.userData.type === 'pir') {
                     g.traverse(child => {
                         if (child.name === 'pirDome' && child.material) {
-                            if (activePirMotion) {
+                            if (freeBuildState.activePirMotion) {
                                 child.material.emissive.setHex(0xef4444);
                                 child.material.emissiveIntensity = 0.6;
                             } else {
@@ -2950,7 +3212,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                     });
                 }
                 if (g.userData.type === 'servo') {
-                    const angleRad = (activeServoAngle - 90) * Math.PI / 180;
+                    const angleRad = (freeBuildState.activeServoAngle - 90) * Math.PI / 180;
                     g.traverse(child => {
                         if (child.name === 'servoHorn') {
                             child.rotation.y = angleRad;
@@ -2958,10 +3220,10 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                     });
                 }
                 if (g.userData.type === 'motor_l298n') {
-                    const running = activeMotorSpeed !== 0;
+                    const running = freeBuildState.activeMotorSpeed !== 0;
                     g.traverse(child => {
                         if (child.name === 'driverBoard' && child.material) {
-                            child.material.emissive.setHex(running ? 0x22c55e : 0x000000);
+                            child.material.emissive.setRGB(0, running ? 0.2 : 0, 0);
                             child.material.emissiveIntensity = running ? 0.35 : 0;
                         }
                     });
@@ -2969,8 +3231,8 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 if (g.userData.type === 'relay') {
                     g.traverse(child => {
                         if (child.name === 'relayLed' && child.material) {
-                            if (activeRelayOn) {
-                                child.material.emissive.setHex(0x22c55e);
+                            if (freeBuildState.activeRelayOn) {
+                                child.material.emissive.setHex(0x00ff00);
                                 child.material.emissiveIntensity = 0.8;
                             } else {
                                 child.material.emissive.setHex(0x000000);
@@ -2983,50 +3245,50 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         }
 
         function handleDhtTemp(val) {
-            activeTempC = parseInt(val, 10);
+            freeBuildState.activeTempC = parseInt(val, 10);
             const el = document.getElementById('dht-temp-val');
-            if (el) el.textContent = `${activeTempC}°C`;
+            if (el) el.textContent = `${freeBuildState.activeTempC}°C`;
             updatePlacedSensorVisuals();
         }
 
         function handleDhtHumidity(val) {
-            activeHumidity = parseInt(val, 10);
+            freeBuildState.activeHumidity = parseInt(val, 10);
             const el = document.getElementById('dht-hum-val');
-            if (el) el.textContent = `${activeHumidity}%`;
+            if (el) el.textContent = `${freeBuildState.activeHumidity}%`;
             updatePlacedSensorVisuals();
         }
 
         function handleDistanceSlider(val) {
-            activeDistanceCm = parseInt(val, 10);
+            freeBuildState.activeDistanceCm = parseInt(val, 10);
             const el = document.getElementById('distance-val');
-            if (el) el.textContent = `${activeDistanceCm} cm`;
+            if (el) el.textContent = `${freeBuildState.activeDistanceCm} cm`;
             updatePlacedSensorVisuals();
         }
 
         function handlePirMotion(isActive) {
-            activePirMotion = isActive;
+            freeBuildState.activePirMotion = isActive;
             updatePlacedSensorVisuals();
         }
 
         function handleServoAngle(val) {
-            activeServoAngle = parseInt(val, 10);
+            freeBuildState.activeServoAngle = parseInt(val, 10);
             const el = document.getElementById('servo-angle-val');
-            if (el) el.textContent = `${activeServoAngle}°`;
+            if (el) el.textContent = `${freeBuildState.activeServoAngle}°`;
             updatePlacedSensorVisuals();
         }
 
         function handleMotorSpeed(val) {
-            activeMotorSpeed = parseInt(val, 10);
+            freeBuildState.activeMotorSpeed = parseInt(val, 10);
             const el = document.getElementById('motor-speed-val');
             if (el) {
-                const dir = activeMotorSpeed >= 0 ? 'FWD' : 'REV';
-                el.textContent = activeMotorSpeed === 0 ? '0%' : `${dir} ${Math.abs(activeMotorSpeed)}%`;
+                const dir = freeBuildState.activeMotorSpeed >= 0 ? 'FWD' : 'REV';
+                el.textContent = freeBuildState.activeMotorSpeed === 0 ? '0%' : `${dir} ${Math.abs(freeBuildState.activeMotorSpeed)}%`;
             }
             updatePlacedSensorVisuals();
         }
 
         function handleRelayToggle(isOn) {
-            activeRelayOn = isOn;
+            freeBuildState.activeRelayOn = isOn;
             updatePlacedSensorVisuals();
         }
 
@@ -3062,12 +3324,12 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 customMeshes["breadboard"].position.y = Math.sin(now * 0.0015) * 0.05;
             }
 
-            if (isSimulating && activeMotorSpeed !== 0) {
+            if (isSimulating && freeBuildState.activeMotorSpeed !== 0) {
                 placedComponents.forEach(g => {
                     if (g.userData.type !== 'motor_l298n') return;
                     g.traverse(child => {
                         if (child.name === 'motorShaft') {
-                            child.rotation.x += activeMotorSpeed * 0.08 * dt;
+                            child.rotation.x += freeBuildState.activeMotorSpeed * 0.08 * dt;
                         }
                     });
                 });
