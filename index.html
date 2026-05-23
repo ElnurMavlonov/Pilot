@@ -186,34 +186,6 @@
             </div>
         </div>
 
-        <!-- Expandable Firmware IDE Terminal -->
-        <footer class="border-t border-slate-200 bg-white">
-            <button onclick="toggleIdeDrawer()" class="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition text-xs font-semibold text-slate-600 cursor-pointer">
-                <span class="flex items-center gap-2">
-                    <i class="fa-solid fa-code text-indigo-500"></i> Active Code Terminal (Arduino C++)
-                </span>
-                <i id="ide-chevron" class="fa-solid fa-chevron-up transition-transform duration-300 text-slate-400"></i>
-            </button>
-
-            <div id="ide-drawer" class="hidden bg-slate-50 border-t border-slate-200 p-4">
-                <div class="flex justify-between items-center mb-2.5">
-                    <div class="flex items-center gap-2">
-                        <span class="flex gap-1">
-                            <span class="w-2.5 h-2.5 rounded-full bg-red-400"></span>
-                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-                        </span>
-                        <span class="text-[10px] text-slate-500 code-font">sketch.ino</span>
-                    </div>
-                    <button onclick="copySketchCode()" class="text-[10px] text-indigo-600 hover:text-indigo-700 font-semibold transition flex items-center gap-1.5 cursor-pointer">
-                        <i class="fa-solid fa-copy"></i> Copy Code
-                    </button>
-                </div>
-                <div class="max-h-[160px] overflow-y-auto bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-                    <pre id="code-content" class="code-font text-[11px] text-slate-700 leading-relaxed select-all whitespace-pre-wrap"></pre>
-                </div>
-            </div>
-        </footer>
     </aside>
 
     <!-- Right Side: Immersive 3D Sandbox View -->
@@ -248,6 +220,49 @@
             </p>
         </div>
     </main>
+
+    <!-- Right Code Panel -->
+    <aside class="w-full md:w-[300px] bg-white border-t md:border-t-0 md:border-l border-slate-200 flex flex-col h-auto md:h-screen z-10 shrink-0">
+
+        <!-- Panel Header -->
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-2">
+                <div class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100">
+                    <i class="fa-solid fa-code text-sm"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-800">Firmware IDE</p>
+                    <p class="text-[10px] text-slate-400">Arduino C++</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-red-400"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            </div>
+        </div>
+
+        <!-- File Tab Bar -->
+        <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
+            <div class="flex items-center gap-1.5">
+                <span class="text-[10px] code-font font-semibold text-indigo-600 bg-white border border-indigo-100 px-2.5 py-1 rounded-t-md rounded-b-none border-b-white -mb-[9px] relative">sketch.ino</span>
+            </div>
+            <button onclick="copySketchCode()" class="flex items-center gap-1.5 text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 bg-white hover:bg-indigo-50 border border-slate-200 px-2.5 py-1 rounded-lg transition cursor-pointer">
+                <i class="fa-solid fa-copy"></i> Copy
+            </button>
+        </div>
+
+        <!-- Code Content -->
+        <div class="flex-1 overflow-y-auto bg-white p-4">
+            <pre id="code-content" class="code-font text-[11.5px] text-slate-700 leading-6 select-all whitespace-pre-wrap"></pre>
+        </div>
+
+        <!-- Footer info -->
+        <div class="px-4 py-2.5 border-t border-slate-100 bg-slate-50 shrink-0 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-[10px] text-slate-500 font-medium">Ready to upload</span>
+        </div>
+    </aside>
 
     <!-- Application Script Logic -->
     <script>
@@ -538,8 +553,7 @@ void loop() {
         let isSimulating = false;
         let simInterval = null;
 
-        // UI Drawer State
-        let ideOpen = false;
+        // IDE is now a persistent right panel (no toggle state needed)
 
         // Three.js State variables
         let scene, camera, renderer, controls;
@@ -815,19 +829,8 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             });
         }
 
-        // IDE toggle interface drawer
-        function toggleIdeDrawer() {
-            ideOpen = !ideOpen;
-            const drawer = document.getElementById("ide-drawer");
-            const chevron = document.getElementById("ide-chevron");
-            if(ideOpen) {
-                drawer.classList.remove("hidden");
-                chevron.classList.add("rotate-180");
-            } else {
-                drawer.classList.add("hidden");
-                chevron.classList.remove("rotate-180");
-            }
-        }
+        // IDE panel is now a persistent right column — toggle is a no-op
+        function toggleIdeDrawer() {}
 
         // Copy setup code to clip path
         function copySketchCode() {
@@ -1352,7 +1355,6 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         window.onload = () => {
             initGraphics();
             applyPreset("blink");
-            toggleIdeDrawer(); // open IDE terminal initially
         };
     </script>
 </body>
