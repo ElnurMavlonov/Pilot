@@ -417,6 +417,10 @@
                     <i class="fa-solid fa-folder-open text-xs"></i>
                 </button>
                 <input id="load-file-input" type="file" accept=".json" class="hidden" onchange="loadProject(this)">
+                <!-- Share circuit link -->
+                <button onclick="shareCircuitLink()" title="Share Circuit Link" class="panel-close-btn" style="display:flex;">
+                    <i class="fa-solid fa-share-nodes text-xs"></i>
+                </button>
                 <!-- Dark mode toggle -->
                 <button id="dark-toggle-btn" onclick="toggleDarkMode()" title="Toggle Dark Mode" class="panel-close-btn" style="display:flex;">
                     <i class="fa-solid fa-moon text-xs"></i>
@@ -941,6 +945,7 @@
             if (e.key === '?' && !isEditing) {
                 toggleShortcutsOverlay();
             }
+            if ((e.key === 's' || e.key === 'S') && !e.metaKey && !e.ctrlKey && !isEditing) shareCircuitLink();
             if (e.key === 'Escape') {
                 const overlay = document.getElementById('shortcuts-overlay');
                 if (overlay && overlay.classList.contains('open')) overlay.classList.remove('open');
@@ -3031,13 +3036,80 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             reader.readAsText(file);
         }
 
+        // ========================================================
+        // SHARE CIRCUIT LINK
+        // ========================================================
+        function shareCircuitLink() {
+            const codeEl = document.getElementById('code-content');
+            const state = {
+                version: '1.0',
+                preset: activePreset,
+                step: activeStep,
+                customCode: codeEl ? codeEl.value : '',
+                placedComponents: placedComponents.map(g => ({
+                    type: g.userData.type,
+                    variant: g.userData.variant || null,
+                    x: parseFloat(g.position.x.toFixed(3)),
+                    z: parseFloat(g.position.z.toFixed(3))
+                }))
+            };
+
+            let encoded;
+            try {
+                encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+            } catch(e) {
+                showToast("Failed to encode circuit.", false);
+                return;
+            }
+
+            const url = `${location.origin}${location.pathname}?c=${encoded}`;
+
+            navigator.clipboard.writeText(url).then(() => {
+                showToast("Share link copied to clipboard! 🔗", false);
+            }).catch(() => {
+                window.prompt("Copy this link:", url);
+            });
+        }
+
         // Entry point
         window.onload = () => {
             initPanels();
             initTheme();
             initGraphics();
-            applyPreset("blink");
             buildPartsLibraryUI();
+
+            // Restore shared circuit from URL param
+            const params = new URLSearchParams(location.search);
+            const encoded = params.get('c');
+            if (encoded) {
+                try {
+                    const state = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+                    if (state.preset && PRESETS[state.preset]) {
+                        applyPreset(state.preset);
+                        if (typeof state.step === 'number') {
+                            activeStep = state.step;
+                            renderCurrentStep();
+                        }
+                        if (state.customCode) {
+                            const codeEl = document.getElementById('code-content');
+                            if (codeEl) codeEl.value = state.customCode;
+                        }
+                        if (Array.isArray(state.placedComponents)) {
+                            state.placedComponents.forEach(c => {
+                                createComponent(c.type, c.variant, c.x, c.z);
+                            });
+                        }
+                        showToast("Circuit loaded from shared link! 🎉", false);
+                    } else {
+                        applyPreset("blink");
+                        showToast("Shared link has an unknown preset — loaded default.", false);
+                    }
+                } catch(e) {
+                    applyPreset("blink");
+                }
+            } else {
+                applyPreset("blink");
+            }
         };
     </script>
 
@@ -3070,6 +3142,9 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-3">Components</p>
             <div class="shortcut-row"><span class="sh-label">Delete Selected</span><span class="sh-keys"><kbd class="sh-key">Del</kbd></span></div>
             <div class="shortcut-row"><span class="sh-label">Context Menu</span><span class="sh-keys"><kbd class="sh-key">Right Click</kbd></span></div>
+
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-3">Sharing</p>
+            <div class="shortcut-row"><span class="sh-label">Copy share link</span><span class="sh-keys"><kbd class="sh-key">S</kbd></span></div>
 
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-3">Firmware IDE</p>
             <div class="shortcut-row"><span class="sh-label">Copy Code</span><span class="sh-keys"><kbd class="sh-key">Ctrl</kbd><kbd class="sh-key">C</kbd></span></div>

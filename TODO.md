@@ -41,7 +41,7 @@
 
 - [x] **Save / Load Projects** — Export circuit configuration as a JSON file and re-import it later
 - [ ] **Export as PDF** — Generate a printable PDF with schematic, code, and step instructions
-- [ ] **Share Circuit Link** — Encode circuit state in a URL query parameter for one-click sharing
+- [x] **Share Circuit Link** — Encode circuit state in a URL query parameter for one-click sharing
 
 ---
 
