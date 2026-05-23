@@ -33,14 +33,14 @@
 
 - [x] **Sound Simulation** — Use the **Web Audio API** to play actual tones from the buzzer at the correct frequency (880 Hz / 440 Hz for the alarm preset)
 - [x] **Serial Monitor** — Simulate `Serial.println()` output in a mock console panel so users can see debug messages without hardware
-- [ ] **Oscilloscope View** — Simple waveform chart showing PWM duty cycle / analog values in real time
+- [x] **Oscilloscope View** — Simple waveform chart showing PWM duty cycle / analog values in real time
 
 ---
 
 ## Sharing & Export
 
 - [x] **Save / Load Projects** — Export circuit configuration as a JSON file and re-import it later
-- [ ] **Export as PDF** — Generate a printable PDF with schematic, code, and step instructions
+- [x] **Export as PDF** — Generate a printable PDF with schematic, code, and step instructions
 - [x] **Share Circuit Link** — Encode circuit state in a URL query parameter for one-click sharing
 
 ---
@@ -49,7 +49,7 @@
 
 - [x] **Dark / Light Mode Toggle** — Add a toggle in the header, persist preference in `localStorage`
 - [ ] **Component Hover Tooltips** — Show 3D labels (component name, pin numbers) when hovering over a mesh in the canvas
-- [ ] **Onboarding Tour** — A first-visit guided walkthrough highlighting the main UI regions
+- [x] **Onboarding Tour** — A first-visit guided walkthrough highlighting the main UI regions
 - [ ] **PWA Offline Support** — Service worker + manifest so the app works without internet after first load
 
 ---
