@@ -700,8 +700,8 @@
                 </div>
 
                 <div class="relative mt-2">
-                    <input id="ai-input" type="text" placeholder="e.g. Turn on buzzer when button is pressed..." class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-indigo-500 transition-colors pr-10">
-                    <button id="btn-generate-ai" onclick="generateAICircuit()" class="absolute right-2 top-2 p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition cursor-pointer" title="Ask AI">
+                    <input id="ai-input" type="text" placeholder="e.g. motion-activated alarm with PIR sensor and buzzer..." class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-indigo-500 transition-colors pr-10">
+                    <button id="btn-generate-ai" onclick="generateAICircuit()" class="absolute right-2 top-2 p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition cursor-pointer" title="Build custom circuit with AI">
                         <i class="fa-solid fa-arrow-right"></i>
                     </button>
                 </div>
@@ -1815,12 +1815,12 @@ void loop() {
             const promptText = inputField.value.trim();
             if(!promptText) return;
 
-            // Route to free-build generator when Parts Library (free-build) mode is active
-            if (isFreeBuildMode) {
-                await generateAIFreeBuildCircuit(promptText);
-                return;
-            }
+            // Always use the component-library builder — auto-switch to free-build mode if needed
+            if (!isFreeBuildMode) enterFreeBuildMode();
+            await generateAIFreeBuildCircuit(promptText);
+            return;
 
+            // ── legacy preset-based generator (kept for reference, unreachable) ──
             showToast("AI is architecting your custom hardware setup...", true);
 
             const fetchWithRetry = async (url, options, retries = 5, delay = 1000) => {
@@ -1939,37 +1939,51 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         async function generateAIFreeBuildCircuit(promptText) {
             showToast("AI is building your circuit...", true);
 
-            const componentCatalog = Object.entries(COMPONENT_PINS).map(([type, pins]) => ({
-                type, pins: pins.map(p => p.name)
-            }));
+            // Build a rich catalog from PARTS_REGISTRY + COMPONENT_PINS
+            const componentCatalog = PARTS_REGISTRY
+                .filter(p => COMPONENT_PINS[p.type])   // only types the 3D builder supports
+                .map(p => ({
+                    id:      p.id,
+                    type:    p.type,
+                    label:   p.label,
+                    variant: p.variant || null,
+                    pins:    COMPONENT_PINS[p.type].map(pin => pin.name)
+                }));
 
-            const systemPrompt = `You are an expert electronics engineer. Design a complete working circuit for the user's request.
+            const systemPrompt = `You are an expert electronics engineer. Design a complete, working circuit that directly fulfils the user's request using any combination of the available components.
 
-Available components with their EXACT pin names:
+AVAILABLE COMPONENTS (use "id" in the output):
 ${JSON.stringify(componentCatalog, null, 2)}
 
-Return ONLY valid JSON matching this schema exactly:
+Return ONLY valid JSON matching this schema exactly — no markdown, no extra keys:
 {
   "description": "one-line circuit description",
   "components": [
-    { "type": "arduino", "variant": null, "x": -2.5, "z": 0 },
-    { "type": "led",     "variant": "red","x":  2.0, "z": 0 }
+    { "id": "arduino_uno", "type": "arduino",  "variant": null,  "x": -2.5, "z": 0   },
+    { "id": "led_red",     "type": "led",      "variant": "red", "x":  2.0, "z": 0   },
+    { "id": "res_220",     "type": "resistor", "variant": "220", "x":  0.5, "z": 0   }
   ],
   "connections": [
-    { "fromComponent": 0, "fromPin": "D13", "toComponent": 1, "toPin": "anode(+)", "color": "#ef4444" }
+    { "fromComponent": 0, "fromPin": "D13",      "toComponent": 2, "toPin": "pin1",      "color": "#6366f1" },
+    { "fromComponent": 2, "fromPin": "pin2",     "toComponent": 1, "toPin": "anode(+)",  "color": "#ef4444" },
+    { "fromComponent": 0, "fromPin": "GND",      "toComponent": 1, "toPin": "cathode(-)", "color": "#1e293b" }
   ],
-  "code": "// Arduino C++ sketch for this circuit",
+  "code": "// Arduino C++ sketch\nvoid setup() {}\nvoid loop() {}",
   "explanation": "Plain-English description of how the circuit works"
 }
 
-Layout and wiring rules:
-- Arduino Uno always at x: -2.5, z: 0
-- Space components at least 2 units apart on x or z axis
-- Use pin names EXACTLY as listed in the catalog (case-sensitive)
-- GND pins connect to GND, 5V connects to VCC/positive pins
-- Always add a current-limiting resistor (220Ω) in series for each LED
-- PWM pins (D3~, D5~, D6~, D9~, D10~, D11~) for analog output
-- Keep circuits to 8 components maximum for clarity`;
+LAYOUT RULES:
+- Arduino Uno: always at x: -2.5, z: 0
+- ESP32 (if used instead): x: -2.5, z: 0
+- Spread components: at least 2 units apart on x or z axis; use a grid pattern
+- fromComponent / toComponent are 0-based indices into the "components" array
+- Pin names must EXACTLY match the catalog (case-sensitive)
+- Power connections: 5V/VCC→VCC/positive pins; GND→GND/negative pins
+- Always add a 220Ω resistor in series for each LED (between digital pin and LED anode)
+- PWM pins (D3~, D5~, D6~, D9~, D10~, D11~) for servo / PWM output
+- Color convention: #ef4444 = power, #1e293b = ground, #6366f1 = signal, #fbbf24 = analog
+- Use only components from the catalog above; select the most appropriate ones for the request
+- Produce a fully connected, functional circuit — every placed component must be wired`;
 
             try {
                 if (!apiKey) throw new Error("no key");
@@ -1978,14 +1992,56 @@ Layout and wiring rules:
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Build circuit: "${promptText}"` }] }],
+                        contents: [{ parts: [{ text: `Build this circuit: "${promptText}"` }] }],
                         systemInstruction: { parts: [{ text: systemPrompt }] },
-                        generationConfig: { responseMimeType: 'application/json' }
+                        generationConfig: {
+                            responseMimeType: 'application/json',
+                            responseSchema: {
+                                type: "OBJECT",
+                                properties: {
+                                    description: { type: "STRING" },
+                                    components: {
+                                        type: "ARRAY",
+                                        items: {
+                                            type: "OBJECT",
+                                            properties: {
+                                                id:      { type: "STRING" },
+                                                type:    { type: "STRING" },
+                                                variant: { type: "STRING" },
+                                                x:       { type: "NUMBER" },
+                                                z:       { type: "NUMBER" }
+                                            },
+                                            required: ["type", "x", "z"]
+                                        }
+                                    },
+                                    connections: {
+                                        type: "ARRAY",
+                                        items: {
+                                            type: "OBJECT",
+                                            properties: {
+                                                fromComponent: { type: "INTEGER" },
+                                                fromPin:       { type: "STRING" },
+                                                toComponent:   { type: "INTEGER" },
+                                                toPin:         { type: "STRING" },
+                                                color:         { type: "STRING" }
+                                            },
+                                            required: ["fromComponent","fromPin","toComponent","toPin"]
+                                        }
+                                    },
+                                    code:        { type: "STRING" },
+                                    explanation: { type: "STRING" }
+                                },
+                                required: ["description","components","connections","code","explanation"]
+                            }
+                        }
                     })
                 });
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const data   = await resp.json();
-                const result = JSON.parse(data.candidates[0].content.parts[0].text);
+                // Strip any accidental markdown fences before parsing
+                let raw = data.candidates[0].content.parts[0].text;
+                raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+                const result = JSON.parse(raw);
                 await applyAIFreeBuildCircuit(result);
                 showToast(`✨ ${result.description || 'AI circuit built!'}`, false);
             } catch(err) {
