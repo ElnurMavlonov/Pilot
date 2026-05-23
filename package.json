@@ -1,0 +1,15 @@
+{
+  "name": "pilot",
+  "version": "1.0.0",
+  "description": "IoTify AI — Generative 3D IoT Lab & Tutor. An interactive browser-based sandbox for learning electronics with Three.js 3D visualization and AI-powered circuit generation.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  },
+  "keywords": ["iot", "arduino", "three.js", "education", "ai", "electronics"],
+  "license": "MIT"
+}
