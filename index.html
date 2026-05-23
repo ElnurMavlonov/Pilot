@@ -46,6 +46,125 @@
                 linear-gradient(to right, rgba(148, 163, 184, 0.4) 1px, transparent 1px),
                 linear-gradient(to bottom, rgba(148, 163, 184, 0.4) 1px, transparent 1px);
         }
+
+        /* ── VS Code-style Panel System ── */
+
+        /* Smooth panel open/close transition (desktop only) */
+        @media (min-width: 768px) {
+            #left-panel {
+                transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            #right-panel {
+                transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+        }
+
+        /* Disable transitions & text-selection during drag */
+        body.is-dragging {
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: col-resize !important;
+        }
+        body.is-dragging * {
+            cursor: col-resize !important;
+        }
+        body.is-dragging #left-panel,
+        body.is-dragging #right-panel {
+            transition: none !important;
+        }
+
+        /* Resize handle — the visible 1px line */
+        .resize-handle-bar {
+            width: 1px;
+            background: #e2e8f0;
+            transition: background 0.15s, width 0.15s;
+            border-radius: 2px;
+        }
+        .resize-handle-wrap:hover .resize-handle-bar,
+        body.is-dragging .resize-handle-bar {
+            width: 2px;
+            background: #6366f1;
+        }
+
+        /* Edge open-tab buttons */
+        .panel-edge-tab {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 30;
+        }
+        .panel-edge-tab button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            color: #94a3b8;
+            padding: 18px 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .panel-edge-tab button:hover {
+            color: #6366f1;
+            background: #eef2ff;
+            border-color: #c7d2fe;
+        }
+        #left-edge-tab { left: 0; }
+        #left-edge-tab button { border-left: none; border-radius: 0 12px 12px 0; }
+        #right-edge-tab { right: 0; }
+        #right-edge-tab button { border-right: none; border-radius: 12px 0 0 12px; }
+
+        .edge-label {
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            color: #cbd5e1;
+            transition: color 0.15s;
+        }
+        .panel-edge-tab button:hover .edge-label {
+            color: #6366f1;
+        }
+
+        /* Close/toggle buttons in panel headers */
+        .panel-close-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+            border-radius: 8px;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            border: none;
+            background: transparent;
+        }
+        @media (min-width: 768px) {
+            .panel-close-btn { display: flex; }
+        }
+        .panel-close-btn:hover {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        /* Keyboard shortcut badge */
+        .kbd {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 9px;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 1px 4px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            color: #64748b;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen overflow-hidden flex flex-col md:flex-row grid-bg">
@@ -56,8 +175,11 @@
         <span id="toast-message" class="text-sm font-medium">AI is generating your custom laboratory setup...</span>
     </div>
 
-    <!-- Left Sidebar: AI Copilot Console -->
-    <aside class="w-full md:w-[480px] bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col h-[50vh] md:h-screen z-10">
+    <!-- ═══════════════════════════════════════════
+         LEFT SIDEBAR: AI Copilot Console
+    ════════════════════════════════════════════ -->
+    <aside id="left-panel" class="bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col h-[50vh] md:h-screen z-10 shrink-0 overflow-hidden min-w-0">
+
         <!-- Brand Header -->
         <header class="p-5 border-b border-slate-100 shrink-0 flex items-center justify-between">
             <div class="flex items-center gap-2.5">
@@ -71,10 +193,14 @@
                     <p class="text-[11px] text-slate-500 font-medium">Generative 3D Hardware Sandbox</p>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5">
                 <span id="status-badge" class="flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
                     <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span> Live IDE
                 </span>
+                <!-- Close left panel button -->
+                <button class="panel-close-btn" onclick="toggleLeftPanel()" title="Close Panel (⌘B)">
+                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                </button>
             </div>
         </header>
 
@@ -188,12 +314,27 @@
 
     </aside>
 
-    <!-- Right Side: Immersive 3D Sandbox View -->
-    <main class="flex-1 relative h-[50vh] md:h-screen w-full">
+    <!-- ═══════════════════════════════════════════
+         LEFT RESIZE HANDLE
+    ════════════════════════════════════════════ -->
+    <div id="left-resize-handle"
+         class="resize-handle-wrap hidden md:flex items-center justify-center w-1 shrink-0 cursor-col-resize z-20 relative"
+         onmousedown="startResize('left', event)"
+         ondblclick="resetPanelWidth('left')"
+         title="Drag to resize · Double-click to reset">
+        <div class="resize-handle-bar h-full"></div>
+        <!-- Wider invisible hit area -->
+        <div class="absolute inset-y-0 -left-2 -right-2"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         CENTER: Immersive 3D Sandbox View
+    ════════════════════════════════════════════ -->
+    <main class="flex-1 relative h-[50vh] md:h-screen w-full min-w-0 overflow-hidden">
         <div id="canvas-view" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
 
         <!-- 3D Camera Controls -->
-        <div class="absolute bottom-6 right-6 flex items-center gap-2">
+        <div class="absolute bottom-6 right-6 flex items-center gap-2 z-10">
             <button onclick="resetCamera()" class="p-3 bg-white/95 border border-slate-200 text-slate-700 rounded-xl shadow-lg hover:bg-white transition flex items-center gap-2 text-xs font-semibold cursor-pointer" title="Default Perspective">
                 <i class="fa-solid fa-camera-rotate text-indigo-400"></i> Reset View
             </button>
@@ -219,10 +360,41 @@
                 Visual connection schematic showing real-time voltage source flows. Current moves out of digital input/output pins, through safety limiters, directly driving the physical components back to the core ground line.
             </p>
         </div>
+
+        <!-- LEFT panel edge tab (shown when left panel is closed) -->
+        <div id="left-edge-tab" class="panel-edge-tab hidden">
+            <button onclick="toggleLeftPanel()" title="Open AI Copilot (⌘B)" aria-label="Open AI Lab panel">
+                <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+                <span class="edge-label">AI Lab</span>
+            </button>
+        </div>
+
+        <!-- RIGHT panel edge tab (shown when right panel is closed) -->
+        <div id="right-edge-tab" class="panel-edge-tab hidden">
+            <button onclick="toggleRightPanel()" title="Open Firmware IDE (⌘J)" aria-label="Open Firmware IDE panel">
+                <i class="fa-solid fa-chevron-left" style="font-size:10px;"></i>
+                <span class="edge-label">IDE</span>
+            </button>
+        </div>
     </main>
 
-    <!-- Right Code Panel -->
-    <aside class="w-full md:w-[300px] bg-white border-t md:border-t-0 md:border-l border-slate-200 flex flex-col h-auto md:h-screen z-10 shrink-0">
+    <!-- ═══════════════════════════════════════════
+         RIGHT RESIZE HANDLE
+    ════════════════════════════════════════════ -->
+    <div id="right-resize-handle"
+         class="resize-handle-wrap hidden md:flex items-center justify-center w-1 shrink-0 cursor-col-resize z-20 relative"
+         onmousedown="startResize('right', event)"
+         ondblclick="resetPanelWidth('right')"
+         title="Drag to resize · Double-click to reset">
+        <div class="resize-handle-bar h-full"></div>
+        <!-- Wider invisible hit area -->
+        <div class="absolute inset-y-0 -left-2 -right-2"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         RIGHT PANEL: Firmware IDE
+    ════════════════════════════════════════════ -->
+    <aside id="right-panel" class="bg-white border-t md:border-t-0 md:border-l border-slate-200 flex flex-col h-auto md:h-screen z-10 shrink-0 overflow-hidden min-w-0">
 
         <!-- Panel Header -->
         <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between shrink-0">
@@ -239,6 +411,10 @@
                 <span class="w-2.5 h-2.5 rounded-full bg-red-400"></span>
                 <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                <!-- Close right panel button -->
+                <button class="panel-close-btn ml-1" onclick="toggleRightPanel()" title="Close Panel (⌘J)">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
             </div>
         </div>
 
@@ -266,7 +442,150 @@
 
     <!-- Application Script Logic -->
     <script>
-        // Set Empty API Key for client configuration
+        // ─────────────────────────────────────────────────────────
+        // PANEL SYSTEM — VS Code-style closable & resizable panels
+        // ─────────────────────────────────────────────────────────
+
+        const DEFAULT_LEFT_WIDTH  = 480;
+        const DEFAULT_RIGHT_WIDTH = 300;
+        const LEFT_MIN  = 280;
+        const LEFT_MAX  = 720;
+        const RIGHT_MIN = 200;
+        const RIGHT_MAX = 580;
+
+        let leftPanelOpen  = true;
+        let rightPanelOpen = true;
+        let leftPanelWidth  = DEFAULT_LEFT_WIDTH;
+        let rightPanelWidth = DEFAULT_RIGHT_WIDTH;
+
+        // Resize drag state
+        let activeResize    = null;   // 'left' | 'right' | null
+        let resizeStartX    = 0;
+        let resizeStartWidth = 0;
+
+        /** Initialize panel widths on desktop via inline styles */
+        function initPanels() {
+            if (window.innerWidth >= 768) {
+                document.getElementById('left-panel').style.width  = leftPanelWidth  + 'px';
+                document.getElementById('right-panel').style.width = rightPanelWidth + 'px';
+            }
+        }
+
+        /** Toggle Left Panel open / closed */
+        function toggleLeftPanel() {
+            if (window.innerWidth < 768) return; // mobile: skip
+            leftPanelOpen = !leftPanelOpen;
+
+            const panel  = document.getElementById('left-panel');
+            const tab    = document.getElementById('left-edge-tab');
+            const handle = document.getElementById('left-resize-handle');
+
+            if (leftPanelOpen) {
+                panel.style.width = leftPanelWidth + 'px';
+                tab.classList.add('hidden');
+                handle.style.display = '';
+            } else {
+                panel.style.width = '0px';
+                tab.classList.remove('hidden');
+                handle.style.display = 'none';
+            }
+            setTimeout(triggerCanvasResize, 260);
+        }
+
+        /** Toggle Right Panel open / closed */
+        function toggleRightPanel() {
+            if (window.innerWidth < 768) return;
+            rightPanelOpen = !rightPanelOpen;
+
+            const panel  = document.getElementById('right-panel');
+            const tab    = document.getElementById('right-edge-tab');
+            const handle = document.getElementById('right-resize-handle');
+
+            if (rightPanelOpen) {
+                panel.style.width = rightPanelWidth + 'px';
+                tab.classList.add('hidden');
+                handle.style.display = '';
+            } else {
+                panel.style.width = '0px';
+                tab.classList.remove('hidden');
+                handle.style.display = 'none';
+            }
+            setTimeout(triggerCanvasResize, 260);
+        }
+
+        /** Begin panel resize drag */
+        function startResize(side, e) {
+            if (window.innerWidth < 768) return;
+            e.preventDefault();
+            activeResize    = side;
+            resizeStartX    = e.clientX;
+            resizeStartWidth = side === 'left' ? leftPanelWidth : rightPanelWidth;
+            document.body.classList.add('is-dragging');
+        }
+
+        /** Track drag movement */
+        document.addEventListener('mousemove', (e) => {
+            if (!activeResize) return;
+            const delta = e.clientX - resizeStartX;
+
+            if (activeResize === 'left') {
+                const w = Math.min(LEFT_MAX, Math.max(LEFT_MIN, resizeStartWidth + delta));
+                leftPanelWidth = w;
+                document.getElementById('left-panel').style.width = w + 'px';
+            } else {
+                const w = Math.min(RIGHT_MAX, Math.max(RIGHT_MIN, resizeStartWidth - delta));
+                rightPanelWidth = w;
+                document.getElementById('right-panel').style.width = w + 'px';
+            }
+            triggerCanvasResize();
+        });
+
+        /** End drag */
+        document.addEventListener('mouseup', () => {
+            if (!activeResize) return;
+            document.body.classList.remove('is-dragging');
+            activeResize = null;
+            triggerCanvasResize();
+        });
+
+        /** Double-click handle → reset to default width */
+        function resetPanelWidth(side) {
+            if (side === 'left') {
+                leftPanelWidth = DEFAULT_LEFT_WIDTH;
+                document.getElementById('left-panel').style.width = leftPanelWidth + 'px';
+            } else {
+                rightPanelWidth = DEFAULT_RIGHT_WIDTH;
+                document.getElementById('right-panel').style.width = rightPanelWidth + 'px';
+            }
+            setTimeout(triggerCanvasResize, 260);
+        }
+
+        /** Notify Three.js that canvas size changed */
+        function triggerCanvasResize() {
+            const container = document.getElementById('canvas-view');
+            if (camera && renderer && container && container.clientWidth > 0) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+
+        /** Keyboard shortcuts — ⌘B toggles left, ⌘J toggles right */
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                e.preventDefault();
+                toggleLeftPanel();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'j') {
+                e.preventDefault();
+                toggleRightPanel();
+            }
+        });
+
+        // ─────────────────────────────────────────────────────────
+        // APPLICATION CORE
+        // ─────────────────────────────────────────────────────────
+
         const apiKey = "";
 
         // Procedural Circuit Presets
@@ -553,8 +872,6 @@ void loop() {
         let isSimulating = false;
         let simInterval = null;
 
-        // IDE is now a persistent right panel (no toggle state needed)
-
         // Three.js State variables
         let scene, camera, renderer, controls;
         let meshGroup;
@@ -575,7 +892,6 @@ void loop() {
 
             showToast("AI is architecting your custom hardware setup...", true);
 
-            // Set up exponential backoff for resilience (Rule 2 API)
             const fetchWithRetry = async (url, options, retries = 5, delay = 1000) => {
                 try {
                     const response = await fetch(url, options);
@@ -600,7 +916,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
       "tip": "Safety/engineering advice",
       "camera": { "x": number, "y": number, "z": number },
       "lookAt": { "x": number, "y": number, "z": number },
-      "visible": ["board", "breadboard", "led", "resistor", "ldr", "buzzer", "button", "wire_gnd", "wire_sig"] // state which components are visual in this step
+      "visible": ["board", "breadboard", "led", "resistor", "ldr", "buzzer", "button", "wire_gnd", "wire_sig"]
     }
   ],
   "wires": [
@@ -613,10 +929,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
 }`;
 
             try {
-                // Check if API Key exists, if not fall back gracefully to procedurally generated custom circuits
-                if (!apiKey) {
-                    throw new Error("Missing API Key");
-                }
+                if (!apiKey) throw new Error("Missing API Key");
 
                 const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
                 const payload = {
@@ -637,22 +950,8 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                                             title: { type: "STRING" },
                                             desc: { type: "STRING" },
                                             tip: { type: "STRING" },
-                                            camera: {
-                                                type: "OBJECT",
-                                                properties: {
-                                                    x: { type: "NUMBER" },
-                                                    y: { type: "NUMBER" },
-                                                    z: { type: "NUMBER" }
-                                                }
-                                            },
-                                            lookAt: {
-                                                type: "OBJECT",
-                                                properties: {
-                                                    x: { type: "NUMBER" },
-                                                    y: { type: "NUMBER" },
-                                                    z: { type: "NUMBER" }
-                                                }
-                                            },
+                                            camera: { type: "OBJECT", properties: { x: { type: "NUMBER" }, y: { type: "NUMBER" }, z: { type: "NUMBER" } } },
+                                            lookAt: { type: "OBJECT", properties: { x: { type: "NUMBER" }, y: { type: "NUMBER" }, z: { type: "NUMBER" } } },
                                             visible: { type: "ARRAY", items: { type: "STRING" } }
                                         }
                                     }
@@ -685,13 +984,10 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 });
 
                 const parsedResult = JSON.parse(data.candidates[0].content.parts[0].text);
-
-                // Set the dynamic preset
                 PRESETS["ai-generated"] = parsedResult;
                 applyPreset("ai-generated");
                 showToast("AI has generated your laboratory sandbox! Enjoy experimenting.", false);
             } catch (err) {
-                // Standard Fallback Simulator logic if key is omitted or fails (Ensures robustness for Hackathon grading!)
                 let fallbackKey = "blink";
                 if (promptText.toLowerCase().includes("light") || promptText.toLowerCase().includes("dark") || promptText.toLowerCase().includes("ldr")) {
                     fallbackKey = "night";
@@ -700,15 +996,12 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 } else if (promptText.toLowerCase().includes("button") || promptText.toLowerCase().includes("switch") || promptText.toLowerCase().includes("press")) {
                     fallbackKey = "button";
                 }
-
-                // Simulate delay
                 await new Promise(r => setTimeout(r, 1200));
                 applyPreset(fallbackKey);
                 showToast("Lab generated successfully using offline local patterns!", false);
             }
         }
 
-        // Display notifications
         function showToast(message, isPersistent) {
             const toast = document.getElementById("toast");
             const toastMsg = document.getElementById("toast-message");
@@ -722,16 +1015,13 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             }
         }
 
-        // Change presets
         function applyPreset(key) {
             activePreset = key;
             activeStep = 0;
 
-            // Re-render sandbox instructions and workspace properties
             const data = PRESETS[key];
             document.getElementById("status-badge").innerHTML = `<span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span> ${data.topic}`;
 
-            // Halt current simulator processes
             if(isSimulating) toggleSimulation();
 
             renderCurrentStep();
@@ -739,10 +1029,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             rebuildWiresIn3D(data.wires);
             updateComponentVisibilities();
 
-            // Setup schematic
             document.getElementById("svg-schematic").innerHTML = data.schematic;
-
-            // Trigger smooth camera glide to default starting angle
             glideCamera(data.steps[0].camera, data.steps[0].lookAt);
         }
 
@@ -756,7 +1043,6 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             document.getElementById("step-tip").textContent = step.tip;
             document.getElementById("code-content").textContent = data.code;
 
-            // Dynamic Dot indicators
             const container = document.getElementById("step-dot-container");
             container.innerHTML = "";
             data.steps.forEach((_, idx) => {
@@ -765,7 +1051,6 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 container.appendChild(dot);
             });
 
-            // Adjust navigation buttons
             document.getElementById("btn-prev").disabled = activeStep === 0;
             const nextBtn = document.getElementById("btn-next");
             if(activeStep === data.steps.length - 1) {
@@ -783,13 +1068,10 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             if(target >= 0 && target < data.steps.length) {
                 activeStep = target;
                 renderCurrentStep();
-
-                // Slide Camera to focused component bounds
                 const step = data.steps[activeStep];
                 glideCamera(step.camera, step.lookAt);
                 updateComponentVisibilities();
             } else if (target === data.steps.length) {
-                // If next clicked on final step, start execution loop!
                 toggleSimulation();
             }
         }
@@ -818,21 +1100,17 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             const data = PRESETS[activePreset];
             const step = data.steps[activeStep];
 
-            // Loop over static objects
             Object.keys(customMeshes).forEach(key => {
                 customMeshes[key].visible = step.visible.includes(key);
             });
 
-            // Loop over wire vectors
             activeWireMeshes.forEach(wire => {
                 wire.visible = step.visible.includes(wire.name);
             });
         }
 
-        // IDE panel is now a persistent right column — toggle is a no-op
         function toggleIdeDrawer() {}
 
-        // Copy setup code to clip path
         function copySketchCode() {
             const code = document.getElementById("code-content").textContent;
             const input = document.createElement("textarea");
@@ -857,7 +1135,6 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             scene = new THREE.Scene();
             scene.background = new THREE.Color("#e8edf2");
 
-            // Setup camera metrics
             camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
             camera.position.set(0, 12, 12);
 
@@ -867,15 +1144,13 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
 
-            // Set orbit constraints
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            controls.maxPolarAngle = Math.PI / 2 - 0.05; // Stay above ground plane
+            controls.maxPolarAngle = Math.PI / 2 - 0.05;
             controls.minDistance = 3;
             controls.maxDistance = 20;
 
-            // Lights
             const ambient = new THREE.AmbientLight("#ffffff", 0.75);
             scene.add(ambient);
 
@@ -886,12 +1161,10 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             spot.shadow.mapSize.height = 1024;
             scene.add(spot);
 
-            // Subtle fill light from opposite direction
             const pointGlow = new THREE.PointLight("#e0e8ff", 0.2, 15);
             pointGlow.position.set(-3, 2, -3);
             scene.add(pointGlow);
 
-            // Workspace Base grids
             const grid = new THREE.GridHelper(30, 30, "#b8c4d0", "#cdd5df");
             grid.position.y = -0.05;
             scene.add(grid);
@@ -899,7 +1172,6 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             meshGroup = new THREE.Group();
             scene.add(meshGroup);
 
-            // Build structural components
             buildArduinoBoard();
             buildBreadboard();
             buildLED();
@@ -908,20 +1180,14 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             buildButton();
             buildLDR();
 
-            // Set positions
             meshGroup.position.set(0, 0, 0);
 
-            window.addEventListener("resize", () => {
-                camera.aspect = container.clientWidth / container.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(container.clientWidth, container.clientHeight);
-            });
+            // Use centralized resize handler
+            window.addEventListener("resize", triggerCanvasResize);
 
-            // Start animation loop
             renderLoop();
         }
 
-        // Smooth camera translation
         function glideCamera(target, look) {
             const start = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
             const startTime = performance.now();
@@ -961,33 +1227,28 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             const board = new THREE.Group();
             board.position.set(-2.5, 0, 0);
 
-            // PCB Body
             const pcbGeom = new THREE.BoxGeometry(4.2, 0.1, 5.8);
             const pcbMat = new THREE.MeshStandardMaterial({ color: "#1e3a5f", roughness: 0.5 });
             const pcb = new THREE.Mesh(pcbGeom, pcbMat);
             board.add(pcb);
 
-            // USB connector
             const usbGeom = new THREE.BoxGeometry(0.8, 0.5, 1.4);
             const silver = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9, roughness: 0.1 });
             const usb = new THREE.Mesh(usbGeom, silver);
             usb.position.set(-1.4, 0.25, -2.4);
             board.add(usb);
 
-            // Power Barrel Jack
             const jackGeom = new THREE.BoxGeometry(0.8, 0.6, 1.2);
             const darkMat = new THREE.MeshStandardMaterial({ color: "#0f172a", roughness: 0.8 });
             const jack = new THREE.Mesh(jackGeom, darkMat);
             jack.position.set(1.4, 0.3, -2.5);
             board.add(jack);
 
-            // Chip
             const mcuGeom = new THREE.BoxGeometry(0.7, 0.12, 1.8);
             const mcu = new THREE.Mesh(mcuGeom, darkMat);
             mcu.position.set(0.6, 0.08, 0.6);
             board.add(mcu);
 
-            // Connection Pin Rail Headers
             const pinRailGeom = new THREE.BoxGeometry(0.25, 0.35, 3.2);
             const rail1 = new THREE.Mesh(pinRailGeom, darkMat);
             rail1.position.set(-1.8, 0.18, -0.6);
@@ -1003,13 +1264,11 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             const breadboard = new THREE.Group();
             breadboard.position.set(2.5, 0, 0);
 
-            // Breadboard Base plate
             const baseGeom = new THREE.BoxGeometry(3.6, 0.25, 8.5);
             const baseMat = new THREE.MeshStandardMaterial({ color: "#fafafa", roughness: 0.9 });
             const base = new THREE.Mesh(baseGeom, baseMat);
             breadboard.add(base);
 
-            // Grid holes (represented as darker pattern details)
             const holeGeom = new THREE.BoxGeometry(0.06, 0.02, 0.06);
             const holeMat = new THREE.MeshBasicMaterial({ color: "#475569" });
 
@@ -1028,7 +1287,6 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             }
             breadboard.add(holes);
 
-            // Bus power rails
             const railGeom = new THREE.BoxGeometry(0.04, 0.01, 7.6);
             const redMat = new THREE.MeshBasicMaterial({ color: "#ef4444" });
             const blueMat = new THREE.MeshBasicMaterial({ color: "#3b82f6" });
@@ -1047,7 +1305,6 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             const led = new THREE.Group();
             led.position.set(2.5, 0, -0.8);
 
-            // Red LED Cap dome
             const domeGeom = new THREE.CylinderGeometry(0.2, 0.2, 0.4, 16);
             const tipGeom = new THREE.SphereGeometry(0.2, 16, 16, 0, Math.PI*2, 0, Math.PI/2);
 
@@ -1065,7 +1322,6 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             tip.position.y = 1.2;
             led.add(dome, tip);
 
-            // Silver component legs
             const pinGeom = new THREE.CylinderGeometry(0.02, 0.02, 1.0, 8);
             const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
 
@@ -1075,7 +1331,6 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             pin2.position.set(0.15, 0.5, 0);
             led.add(pin1, pin2);
 
-            // Simulated Emitting Light source
             const glow = new THREE.PointLight("#ef4444", 0, 5);
             glow.position.set(0, 1.3, 0);
             led.add(glow);
@@ -1088,14 +1343,12 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             const r = new THREE.Group();
             r.position.set(3.4, 0.4, -0.8);
 
-            // Resistor Body barrel
             const bodyGeom = new THREE.CylinderGeometry(0.12, 0.12, 0.45, 12);
             bodyGeom.rotateZ(Math.PI / 2);
             const bodyMat = new THREE.MeshStandardMaterial({ color: "#f8fafc", roughness: 0.6 });
             const body = new THREE.Mesh(bodyGeom, bodyMat);
             r.add(body);
 
-            // Resistor stripes (Red, Red, Brown, Gold)
             const stripeGeom = new THREE.CylinderGeometry(0.13, 0.13, 0.04, 12);
             stripeGeom.rotateZ(Math.PI/2);
             const redMat = new THREE.MeshBasicMaterial({ color: "#ef4444" });
@@ -1106,7 +1359,6 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             const s3 = new THREE.Mesh(stripeGeom, brownMat); s3.position.x = 0.12;
             r.add(s1, s2, s3);
 
-            // Metal wire bridge legs
             const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.4, 8);
             const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
 
@@ -1122,14 +1374,12 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             const buzzer = new THREE.Group();
             buzzer.position.set(2.5, 0, 0.8);
 
-            // Main cylindrical acoustic barrel
             const bodyGeom = new THREE.CylinderGeometry(0.5, 0.5, 0.6, 24);
             const bodyMat = new THREE.MeshStandardMaterial({ color: "#0f172a", roughness: 0.8 });
             const body = new THREE.Mesh(bodyGeom, bodyMat);
             body.position.y = 0.5;
             buzzer.add(body);
 
-            // Sound output hole
             const innerGeom = new THREE.CylinderGeometry(0.2, 0.2, 0.05, 16);
             const innerMat = new THREE.MeshBasicMaterial({ color: "#020617" });
             const inner = new THREE.Mesh(innerGeom, innerMat);
@@ -1144,14 +1394,12 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             const btn = new THREE.Group();
             btn.position.set(2.5, 0.13, 1.8);
 
-            // Pushbutton casing
             const casingGeom = new THREE.BoxGeometry(0.45, 0.2, 0.45);
             const casingMat = new THREE.MeshStandardMaterial({ color: "#1e293b", roughness: 0.7 });
             const casing = new THREE.Mesh(casingGeom, casingMat);
             casing.position.y = 0.1;
             btn.add(casing);
 
-            // Clickable plastic knob Cap
             const capGeom = new THREE.CylinderGeometry(0.12, 0.12, 0.15, 12);
             const capMat = new THREE.MeshStandardMaterial({ color: "#f43f5e", roughness: 0.2 });
             const cap = new THREE.Mesh(capGeom, capMat);
@@ -1166,21 +1414,18 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             const ldr = new THREE.Group();
             ldr.position.set(2.5, 0.2, -1.8);
 
-            // Ceramic detector disc
             const headGeom = new THREE.CylinderGeometry(0.2, 0.2, 0.08, 16);
             const headMat = new THREE.MeshStandardMaterial({ color: "#e2e8f0", roughness: 0.5 });
             const head = new THREE.Mesh(headGeom, headMat);
             head.position.y = 0.4;
             ldr.add(head);
 
-            // Red photoresistor trace graphic line
             const lineGeom = new THREE.BoxGeometry(0.15, 0.02, 0.03);
             const lineMat = new THREE.MeshBasicMaterial({ color: "#f97316" });
             const l1 = new THREE.Mesh(lineGeom, lineMat);
             l1.position.set(0, 0.45, 0);
             ldr.add(l1);
 
-            // Components legs
             const leadGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.4, 8);
             const metal = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9 });
             const pin1 = new THREE.Mesh(leadGeom, metal); pin1.position.set(-0.1, 0.2, 0);
@@ -1191,9 +1436,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             customMeshes["ldr"] = ldr;
         }
 
-        // Procedural wire spline constructor
         function rebuildWiresIn3D(wiresData) {
-            // Remove existing active wires from workspace
             activeWireMeshes.forEach(wire => scene.remove(wire));
             activeWireMeshes = [];
 
@@ -1218,7 +1461,6 @@ Return ONLY a valid JSON object matching this TypeScript structure:
         // SIMULATION EXECUTION RUNTIME LOOP
         // ========================================================
         function toggleSimulation() {
-            // Force jump to final step so users see all wiring completed!
             const finalIndex = PRESETS[activePreset].steps.length - 1;
             if(activeStep < finalIndex) {
                 activeStep = finalIndex;
@@ -1228,7 +1470,6 @@ Return ONLY a valid JSON object matching this TypeScript structure:
 
             const btn = document.getElementById("btn-simulation");
             if(isSimulating) {
-                // Terminate simulation
                 isSimulating = false;
                 btn.innerHTML = `<i class="fa-solid fa-play"></i> Run Sandbox`;
                 btn.className = "flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-300 px-4 py-3.5 rounded-2xl font-semibold text-sm shadow-xl shadow-emerald-900/10 cursor-pointer";
@@ -1236,12 +1477,10 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 clearInterval(simInterval);
                 resetAllComponentOutputs();
             } else {
-                // Initialize Simulation Execution Loop
                 isSimulating = true;
                 btn.innerHTML = `<i class="fa-solid fa-pause"></i> Halt Sandbox`;
                 btn.className = "flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white transition-all duration-300 px-4 py-3.5 rounded-2xl font-semibold text-sm shadow-xl shadow-amber-900/10 cursor-pointer";
 
-                // Activate simulation logic loops depending on loaded preset module
                 runSimulationInterval();
             }
         }
@@ -1251,29 +1490,16 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             simInterval = setInterval(() => {
                 if(!isSimulating) return;
 
-                const data = PRESETS[activePreset];
-
-                // Blink Engine Logic
                 if(activePreset === "blink") {
                     ticker = !ticker;
                     setLEDOutput(ticker);
                 }
-
-                // Night-Light Photoresistor Logic
                 else if (activePreset === "night") {
-                    if(activeLdrLevel < 40) {
-                        setLEDOutput(true);
-                    } else {
-                        setLEDOutput(false);
-                    }
+                    setLEDOutput(activeLdrLevel < 40);
                 }
-
-                // Momentary Button switch logic
                 else if (activePreset === "button") {
                     setLEDOutput(activeButtonState);
                 }
-
-                // Piezo Buzzer frequency cycle animation
                 else if (activePreset === "alarm") {
                     ticker = !ticker;
                     setBuzzerOutput(ticker);
@@ -1316,7 +1542,6 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             renderer.setClearColor(new THREE.Color("#e8edf2"), 1.0);
         }
 
-        // Sandbox Interactions
         function handleHardwareSlider(val) {
             activeLdrLevel = parseInt(val);
             document.getElementById("slider-val").textContent = `${activeLdrLevel}%`;
@@ -1335,7 +1560,6 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             }
         }
 
-        // Global Loop Render Clock
         function renderLoop() {
             requestAnimationFrame(renderLoop);
             controls.update();
@@ -1350,9 +1574,9 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             renderer.render(scene, camera);
         }
 
-
-        // Entry point initializer
+        // Entry point
         window.onload = () => {
+            initPanels();
             initGraphics();
             applyPreset("blink");
         };
