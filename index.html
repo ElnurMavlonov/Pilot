@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -29,51 +29,51 @@
             height: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: #0b1329;
+            background: #f1f5f9;
         }
         ::-webkit-scrollbar-thumb {
-            background: #1e293b;
+            background: #cbd5e1;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #334155;
+            background: #94a3b8;
         }
 
-        /* Ambient glowing grid background */
+        /* Subtle educational grid background */
         .grid-bg {
             background-size: 40px 40px;
             background-image:
-                linear-gradient(to right, rgba(30, 41, 59, 0.2) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(30, 41, 59, 0.2) 1px, transparent 1px);
+                linear-gradient(to right, rgba(148, 163, 184, 0.4) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(148, 163, 184, 0.4) 1px, transparent 1px);
         }
     </style>
 </head>
-<body class="bg-[#030712] text-slate-100 min-h-screen overflow-hidden flex flex-col md:flex-row grid-bg">
+<body class="bg-slate-50 text-slate-900 min-h-screen overflow-hidden flex flex-col md:flex-row grid-bg">
 
     <!-- Toast Alert Modal -->
-    <div id="toast" class="fixed top-6 right-6 bg-slate-900/95 border border-indigo-500/30 text-indigo-400 px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-[-100px] opacity-0 z-50">
+    <div id="toast" class="fixed top-6 right-6 bg-white border border-indigo-200 text-indigo-700 px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 transition-all duration-300 transform translate-y-[-100px] opacity-0 z-50">
         <i class="fa-solid fa-wand-magic-sparkles text-lg animate-pulse"></i>
         <span id="toast-message" class="text-sm font-medium">AI is generating your custom laboratory setup...</span>
     </div>
 
     <!-- Left Sidebar: AI Copilot Console -->
-    <aside class="w-full md:w-[480px] bg-slate-950/90 border-b md:border-b-0 md:border-r border-slate-900 flex flex-col h-[50vh] md:h-screen z-10 backdrop-blur-md">
+    <aside class="w-full md:w-[480px] bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col h-[50vh] md:h-screen z-10">
         <!-- Brand Header -->
-        <header class="p-5 border-b border-slate-900 shrink-0 flex items-center justify-between">
+        <header class="p-5 border-b border-slate-100 shrink-0 flex items-center justify-between">
             <div class="flex items-center gap-2.5">
-                <div class="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20">
+                <div class="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-200">
                     <i class="fa-solid fa-cube text-xl animate-spin-slow"></i>
                 </div>
                 <div>
-                    <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+                    <h1 class="text-base font-bold tracking-tight text-slate-900 flex items-center gap-1.5">
                         IoTify <span class="text-xs bg-indigo-500 text-white font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider">AI Lab</span>
                     </h1>
-                    <p class="text-[11px] text-slate-400 font-medium">Generative 3D Hardware Sandbox</p>
+                    <p class="text-[11px] text-slate-500 font-medium">Generative 3D Hardware Sandbox</p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <span id="status-badge" class="flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">
-                    <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></span> Live IDE
+                <span id="status-badge" class="flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
+                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span> Live IDE
                 </span>
             </div>
         </header>
@@ -82,90 +82,94 @@
         <div class="flex-1 overflow-y-auto p-5 space-y-5">
 
             <!-- AI Prompter Block -->
-            <div class="bg-slate-900/40 border border-slate-900 rounded-2xl p-4 space-y-3">
-                <div class="flex items-center gap-2 text-xs font-semibold text-slate-400">
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
                     <i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i>
                     <span>AI Circuit Architect</span>
                 </div>
-                <p class="text-xs text-slate-400 leading-relaxed">
+                <p class="text-xs text-slate-600 leading-relaxed">
                     Describe any IoT idea. Gemini will program the controller, fetch standard hardware, wire them, and setup an interactive tutorial.
                 </p>
 
                 <!-- Quick Prompts / Presets -->
                 <div class="flex flex-wrap gap-1.5 pt-1">
-                    <button onclick="applyPreset('blink')" class="text-[10px] bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg px-2.5 py-1 transition">
-                        💡 LED Blink
+                    <button onclick="applyPreset('blink')" class="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 rounded-lg px-2.5 py-1 transition cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+                        LED Blink
                     </button>
-                    <button onclick="applyPreset('night')" class="text-[10px] bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg px-2.5 py-1 transition">
-                        🌙 Night Light (LDR)
+                    <button onclick="applyPreset('night')" class="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 rounded-lg px-2.5 py-1 transition cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                        Night Light (LDR)
                     </button>
-                    <button onclick="applyPreset('alarm')" class="text-[10px] bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg px-2.5 py-1 transition">
-                        🚨 Siren Alarm
+                    <button onclick="applyPreset('alarm')" class="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 rounded-lg px-2.5 py-1 transition cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="M4 2 2 4"/><path d="m20 2 2 2"/></svg>
+                        Siren Alarm
                     </button>
-                    <button onclick="applyPreset('button')" class="text-[10px] bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg px-2.5 py-1 transition">
-                        🎛️ Push Trigger
+                    <button onclick="applyPreset('button')" class="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 rounded-lg px-2.5 py-1 transition cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><path d="M12 22V12"/><path d="m15 7-3-3-3 3"/><path d="M4 12h16"/></svg>
+                        Push Trigger
                     </button>
                 </div>
 
                 <div class="relative mt-2">
-                    <input id="ai-input" type="text" placeholder="e.g. Turn on buzzer when button is pressed..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 transition-colors pr-10">
-                    <button id="btn-generate-ai" onclick="generateAICircuit()" class="absolute right-2 top-2 p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition" title="Ask AI">
+                    <input id="ai-input" type="text" placeholder="e.g. Turn on buzzer when button is pressed..." class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-indigo-500 transition-colors pr-10">
+                    <button id="btn-generate-ai" onclick="generateAICircuit()" class="absolute right-2 top-2 p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition cursor-pointer" title="Ask AI">
                         <i class="fa-solid fa-arrow-right"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Dynamic Learning Stage / Walkthrough Steps -->
-            <div id="step-box" class="bg-gradient-to-br from-slate-900/60 to-slate-950/20 border border-slate-900 rounded-2xl p-5 space-y-4">
+            <div id="step-box" class="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
                 <div class="flex items-center justify-between">
-                    <span id="step-index" class="text-[11px] font-bold px-2.5 py-1 bg-indigo-500/10 text-indigo-400 rounded-full border border-indigo-500/20 tracking-wider uppercase">
+                    <span id="step-index" class="text-[11px] font-bold px-2.5 py-1 bg-indigo-600 text-white rounded-full tracking-wider uppercase">
                         Step 1 of 4
                     </span>
                     <span class="text-xs text-slate-500 font-semibold" id="step-comp-category">Active Lab</span>
                 </div>
 
                 <div>
-                    <h3 id="step-title" class="text-base font-bold text-white mb-2">Powering Your Workspace</h3>
-                    <p id="step-desc" class="text-xs text-slate-400 leading-relaxed">
+                    <h3 id="step-title" class="text-base font-bold text-slate-900 mb-2">Powering Your Workspace</h3>
+                    <p id="step-desc" class="text-xs text-slate-600 leading-relaxed">
                         Let's start by looking at our development kit. We have a procedurally rendering microcontroller board and prototype workspace. Drag on the screen to observe the system pins.
                     </p>
                 </div>
 
                 <!-- Simulation Interactive Component Overlays -->
-                <div id="interactive-hardware-control" class="hidden p-3.5 bg-slate-950/90 border border-indigo-500/20 rounded-xl space-y-2.5">
-                    <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span> Sandbox Inputs (Interactive)
+                <div id="interactive-hardware-control" class="hidden p-3.5 bg-indigo-50 border border-indigo-200 rounded-xl space-y-2.5">
+                    <span class="text-[10px] font-bold text-indigo-700 uppercase tracking-widest flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span> Sandbox Inputs (Interactive)
                     </span>
                     <div id="interactive-slider-wrapper" class="hidden">
-                        <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                        <div class="flex justify-between text-[11px] text-slate-600 mb-1">
                             <span id="slider-label">Sensor Input Level</span>
-                            <span id="slider-val" class="font-bold text-indigo-300">50%</span>
+                            <span id="slider-val" class="font-bold text-indigo-700">50%</span>
                         </div>
-                        <input id="hw-slider" type="range" min="0" max="100" value="50" oninput="handleHardwareSlider(this.value)" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                        <input id="hw-slider" type="range" min="0" max="100" value="50" oninput="handleHardwareSlider(this.value)" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
                     </div>
                     <div id="interactive-btn-wrapper" class="hidden">
-                        <button id="hw-trigger-btn" onmousedown="handleHardwareButton(true)" onmouseup="handleHardwareButton(false)" onmouseleave="handleHardwareButton(false)" ontouchstart="handleHardwareButton(true)" ontouchend="handleHardwareButton(false)" class="w-full bg-slate-800 hover:bg-slate-700 active:bg-indigo-600 border border-slate-700 py-2.5 rounded-lg text-xs font-semibold text-white transition-all flex items-center justify-center gap-2">
+                        <button id="hw-trigger-btn" onmousedown="handleHardwareButton(true)" onmouseup="handleHardwareButton(false)" onmouseleave="handleHardwareButton(false)" ontouchstart="handleHardwareButton(true)" ontouchend="handleHardwareButton(false)" class="w-full bg-white hover:bg-indigo-50 active:bg-indigo-600 active:text-white border border-indigo-300 py-2.5 rounded-lg text-xs font-semibold text-indigo-700 transition-all flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fa-solid fa-hand-pointer"></i> Press & Hold Component Button
                         </button>
                     </div>
                 </div>
 
-                <div class="p-3 bg-slate-900/90 border border-slate-800 rounded-xl flex items-start gap-3">
-                    <i class="fa-solid fa-lightbulb text-amber-400 text-sm mt-0.5"></i>
-                    <p id="step-tip" class="text-[11px] text-slate-400 leading-relaxed">
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                    <i class="fa-solid fa-lightbulb text-amber-600 text-sm mt-0.5"></i>
+                    <p id="step-tip" class="text-[11px] text-amber-900 leading-relaxed">
                         Hold left click to rotate. Scroll to zoom. Use the IDE panel at the bottom to write custom firmware.
                     </p>
                 </div>
 
                 <!-- Step Navigator Controls -->
-                <div class="flex items-center justify-between pt-1 border-t border-slate-900">
-                    <button id="btn-prev" onclick="moveStep(-1)" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 disabled:opacity-30 disabled:hover:bg-slate-900 transition-colors rounded-xl text-xs font-semibold flex items-center gap-1.5">
+                <div class="flex items-center justify-between pt-1 border-t border-slate-100">
+                    <button id="btn-prev" onclick="moveStep(-1)" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 disabled:opacity-30 disabled:hover:bg-slate-100 transition-colors rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
                         <i class="fa-solid fa-chevron-left"></i> Back
                     </button>
 
                     <div class="flex gap-1" id="step-dot-container"></div>
 
-                    <button id="btn-next" onclick="moveStep(1)" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors rounded-xl text-xs font-semibold flex items-center gap-1.5">
+                    <button id="btn-next" onclick="moveStep(1)" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
                         Next <i class="fa-solid fa-chevron-right"></i>
                     </button>
                 </div>
@@ -173,18 +177,18 @@
 
             <!-- Simulation Controller & Action Block -->
             <div class="grid grid-cols-2 gap-3">
-                <button id="btn-simulation" onclick="toggleSimulation()" class="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-300 px-4 py-3.5 rounded-2xl font-semibold text-sm shadow-xl shadow-emerald-900/10">
+                <button id="btn-simulation" onclick="toggleSimulation()" class="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-300 px-4 py-3.5 rounded-2xl font-semibold text-sm shadow-xl shadow-emerald-900/10 cursor-pointer">
                     <i class="fa-solid fa-play"></i> Run Sandbox
                 </button>
-                <button onclick="toggleSchematicPanel()" class="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 transition-all px-4 py-3.5 rounded-2xl font-semibold text-sm">
+                <button onclick="toggleSchematicPanel()" class="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-all px-4 py-3.5 rounded-2xl font-semibold text-sm cursor-pointer">
                     <i class="fa-solid fa-diagram-project"></i> Diagram
                 </button>
             </div>
         </div>
 
         <!-- Expandable Firmware IDE Terminal -->
-        <footer class="border-t border-slate-900 bg-slate-950">
-            <button onclick="toggleIdeDrawer()" class="w-full flex items-center justify-between p-4 hover:bg-slate-900/40 transition text-xs font-semibold text-slate-400">
+        <footer class="border-t border-slate-200 bg-slate-900">
+            <button onclick="toggleIdeDrawer()" class="w-full flex items-center justify-between p-4 hover:bg-slate-800/40 transition text-xs font-semibold text-slate-300 cursor-pointer">
                 <span class="flex items-center gap-2">
                     <i class="fa-solid fa-code text-indigo-400"></i> Active Code Terminal (Arduino C++)
                 </span>
@@ -211,28 +215,28 @@
 
         <!-- 3D Camera Controls -->
         <div class="absolute bottom-6 right-6 flex items-center gap-2">
-            <button onclick="resetCamera()" class="p-3 bg-slate-950/90 border border-slate-800 text-slate-300 rounded-xl shadow-2xl hover:bg-slate-900 transition flex items-center gap-2 text-xs font-semibold" title="Default Perspective">
+            <button onclick="resetCamera()" class="p-3 bg-white/95 border border-slate-200 text-slate-700 rounded-xl shadow-lg hover:bg-white transition flex items-center gap-2 text-xs font-semibold cursor-pointer" title="Default Perspective">
                 <i class="fa-solid fa-camera-rotate text-indigo-400"></i> Reset View
             </button>
         </div>
 
         <!-- Floating SVG Schematic Overlay -->
-        <div id="schematic-panel" class="absolute inset-4 md:inset-8 bg-slate-950/95 border border-slate-900 rounded-3xl p-6 hidden flex-col z-20 shadow-2xl max-w-xl overflow-y-auto">
-            <div class="flex justify-between items-center mb-4 border-b border-slate-900 pb-3">
+        <div id="schematic-panel" class="absolute inset-4 md:inset-8 bg-white border border-slate-200 rounded-3xl p-6 hidden flex-col z-20 shadow-2xl max-w-xl overflow-y-auto">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-diagram-project text-indigo-500 text-lg"></i>
-                    <h3 class="font-bold text-slate-200">Circuit Schematic</h3>
+                    <h3 class="font-bold text-slate-900">Circuit Schematic</h3>
                 </div>
-                <button onclick="toggleSchematicPanel()" class="p-2 hover:bg-slate-900 text-slate-400 hover:text-white transition rounded-xl">
+                <button onclick="toggleSchematicPanel()" class="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition rounded-xl cursor-pointer">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <div class="flex-1 bg-slate-900/30 border border-slate-850 rounded-2xl p-4 flex items-center justify-center min-h-[220px]">
+            <div class="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-center min-h-[220px]">
                 <svg id="svg-schematic" viewBox="0 0 400 300" class="w-full max-h-[260px]">
                     <!-- Generated Dynamically -->
                 </svg>
             </div>
-            <p id="schematic-description" class="text-xs text-slate-400 mt-4 leading-relaxed">
+            <p id="schematic-description" class="text-xs text-slate-600 mt-4 leading-relaxed">
                 Visual connection schematic showing real-time voltage source flows. Current moves out of digital input/output pins, through safety limiters, directly driving the physical components back to the core ground line.
             </p>
         </div>
@@ -704,7 +708,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
 
             // Re-render sandbox instructions and workspace properties
             const data = PRESETS[key];
-            document.getElementById("status-badge").innerHTML = `<span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-ping"></span> ${data.topic}`;
+            document.getElementById("status-badge").innerHTML = `<span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span> ${data.topic}`;
 
             // Halt current simulator processes
             if(isSimulating) toggleSimulation();
@@ -736,7 +740,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             container.innerHTML = "";
             data.steps.forEach((_, idx) => {
                 const dot = document.createElement("div");
-                dot.className = `w-2 h-2 rounded-full transition-all duration-300 ${idx === activeStep ? 'bg-indigo-500 w-5' : 'bg-slate-800'}`;
+                dot.className = `w-2 h-2 rounded-full transition-all duration-300 ${idx === activeStep ? 'bg-indigo-600 w-5' : 'bg-slate-300'}`;
                 container.appendChild(dot);
             });
 
@@ -745,10 +749,10 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             const nextBtn = document.getElementById("btn-next");
             if(activeStep === data.steps.length - 1) {
                 nextBtn.innerHTML = `Start Sim <i class="fa-solid fa-play ml-1"></i>`;
-                nextBtn.className = "px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white transition-colors rounded-xl text-xs font-semibold flex items-center gap-1.5";
+                nextBtn.className = "px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white transition-colors rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer";
             } else {
                 nextBtn.innerHTML = `Next <i class="fa-solid fa-chevron-right"></i>`;
-                nextBtn.className = "px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors rounded-xl text-xs font-semibold flex items-center gap-1.5";
+                nextBtn.className = "px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer";
             }
         }
 
@@ -1217,7 +1221,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 // Terminate simulation
                 isSimulating = false;
                 btn.innerHTML = `<i class="fa-solid fa-play"></i> Run Sandbox`;
-                btn.className = "flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-300 px-4 py-3.5 rounded-2xl font-semibold text-sm shadow-xl shadow-emerald-900/10";
+                btn.className = "flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-300 px-4 py-3.5 rounded-2xl font-semibold text-sm shadow-xl shadow-emerald-900/10 cursor-pointer";
 
                 clearInterval(simInterval);
                 resetAllComponentOutputs();
@@ -1225,7 +1229,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
                 // Initialize Simulation Execution Loop
                 isSimulating = true;
                 btn.innerHTML = `<i class="fa-solid fa-pause"></i> Halt Sandbox`;
-                btn.className = "flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white transition-all duration-300 px-4 py-3.5 rounded-2xl font-semibold text-sm shadow-xl shadow-amber-900/10";
+                btn.className = "flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white transition-all duration-300 px-4 py-3.5 rounded-2xl font-semibold text-sm shadow-xl shadow-amber-900/10 cursor-pointer";
 
                 // Activate simulation logic loops depending on loaded preset module
                 runSimulationInterval();
