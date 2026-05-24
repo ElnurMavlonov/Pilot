@@ -239,8 +239,37 @@ body.is-dragging .resize-handle-bar {
 }
 
 /* ── Community Library Modal ── */
-#community-library-modal { transition: opacity 0.3s ease; }
+#community-library-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  transition: opacity 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
+}
 #community-library-modal.open { opacity: 1; pointer-events: auto; }
+body.community-library-open { overflow: hidden; }
+#community-library-modal .community-modal-shell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 1rem;
+  overflow: hidden;
+}
+#community-library-modal .community-modal-card {
+  width: 100%;
+  max-width: 64rem;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 .community-tab { position: relative; }
 .community-tab.active { color: var(--blue-primary); border-bottom-color: var(--blue-primary); }
 .community-tab-content { animation: fadeIn 0.3s ease; }
@@ -255,6 +284,7 @@ body.is-dragging .resize-handle-bar {
   padding: 16px;
   transition: all 0.2s;
   cursor: pointer;
+  min-width: 0;
 }
 .circuit-card:hover {
   border-color: var(--blue-primary);

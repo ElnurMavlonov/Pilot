@@ -2,9 +2,8 @@ import { useState } from 'react';
 import {
   undo, redo, toggleMuteAudio, toggleWireMode, resetCamera,
   toggleLeftPanel, toggleRightPanel, toggleSchematicPanel,
-  setActiveWireColor, applyPreset, openCommunityLibrary,
+  setActiveWireColor, openCommunityLibrary,
   generateAICircuit, askAITutor,
-  handleHardwareSlider, handleHardwareButton,
   handleDhtTemp, handleDhtHumidity, handleDistanceSlider,
   handlePirMotion, handleServoAngle, handleMotorSpeed, handleRelayToggle,
   moveStep,
@@ -195,198 +194,67 @@ export default function Workspace3D() {
       </div>
 
       {/* ══════════════════════════════════════════════════
-          BOTTOM PANELS — Analysis & Steps | AI Tutor
+          BOTTOM PANEL — AI Tutor
       ══════════════════════════════════════════════════ */}
       <div className="h-[260px] border-t border-slate-200 flex shrink-0 min-h-0">
 
-        {/* ── LEFT: Analysis & Steps ── */}
-        <div className="flex-1 border-r border-slate-200 flex flex-col overflow-hidden">
-          {/* Panel header */}
-          <div className="px-4 pt-3 pb-2 border-b border-slate-100 shrink-0">
-            <h3 className="text-sm font-bold text-slate-900">Analysis &amp; Steps</h3>
-            <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-              Process analysis and recommended steps
-            </p>
-          </div>
+        {/* ── AI Tutor (full width) ── */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-white">
 
-          {/* Step content — managed by JS via IDs */}
-          <div id="step-box" className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-            {/* Step badge + category */}
-            <div className="flex items-center justify-between">
-              <span
-                id="step-index"
-                className="text-[10px] font-bold px-2.5 py-1 bg-blue-600 text-white rounded-full tracking-wider uppercase"
-              >
-                Step 1 of 4
-              </span>
-              <span className="text-[10px] text-slate-400 font-semibold" id="step-comp-category">
-                Active Lab
-              </span>
-            </div>
-
-            {/* Title + description */}
-            <div>
-              <h4 id="step-title" className="text-sm font-bold text-slate-900 mb-1">
-                Powering Your Workspace
-              </h4>
-              <p id="step-desc" className="text-xs text-slate-600 leading-relaxed">
-                Let&apos;s start by looking at our development kit. We have a procedurally rendering microcontroller board and prototype workspace. Drag on the screen to observe the system pins.
-              </p>
-            </div>
-
-            {/* Interactive hardware controls (shown/hidden by JS) */}
-            <div
-              id="interactive-hardware-control"
-              className="hidden p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2.5"
-            >
-              <span className="text-[10px] font-bold text-blue-700 uppercase tracking-widest flex items-center gap-1.5">
+          {/* Interactive hardware controls (shown/hidden by JS when simulation runs) */}
+          <div
+            id="interactive-hardware-control"
+            className="hidden shrink-0 px-3 py-2 bg-blue-50 border-b border-blue-200 overflow-x-auto"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-[10px] font-bold text-blue-700 uppercase tracking-widest flex items-center gap-1.5 shrink-0">
                 <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-                Sandbox Inputs (Interactive)
+                Sandbox Inputs
               </span>
 
-              <div id="interactive-slider-wrapper" className="hidden">
-                <div className="flex justify-between text-[11px] text-slate-600 mb-1">
-                  <span id="slider-label">Sensor Input Level</span>
-                  <span id="slider-val" className="font-bold text-blue-700">50%</span>
+              <div id="interactive-dht-wrapper" className="hidden flex items-center gap-2 shrink-0">
+                <span className="text-[10px] font-bold text-cyan-600 shrink-0"><i className="fa-solid fa-temperature-half mr-1"></i>DHT11</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-slate-500 whitespace-nowrap">Temp</span>
+                  <input id="hw-dht-temp" type="range" min="0" max="50" defaultValue="25" onInput={(e) => handleDhtTemp(e.target.value)} className="w-20 h-1.5 bg-slate-200 rounded appearance-none cursor-pointer accent-blue-600" />
+                  <span id="dht-temp-val" className="text-[10px] font-bold text-blue-700 w-8">25°C</span>
                 </div>
-                <input
-                  id="hw-slider"
-                  type="range"
-                  min="0"
-                  max="100"
-                  defaultValue="50"
-                  onInput={(e) => handleHardwareSlider(e.target.value)}
-                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-slate-500 whitespace-nowrap">Hum</span>
+                  <input id="hw-dht-hum" type="range" min="0" max="100" defaultValue="50" onInput={(e) => handleDhtHumidity(e.target.value)} className="w-20 h-1.5 bg-slate-200 rounded appearance-none cursor-pointer accent-blue-600" />
+                  <span id="dht-hum-val" className="text-[10px] font-bold text-blue-700 w-8">50%</span>
+                </div>
               </div>
 
-              <div id="interactive-btn-wrapper" className="hidden">
-                <button
-                  id="hw-trigger-btn"
-                  onMouseDown={() => handleHardwareButton(true)}
-                  onMouseUp={() => handleHardwareButton(false)}
-                  onMouseLeave={() => handleHardwareButton(false)}
-                  onTouchStart={() => handleHardwareButton(true)}
-                  onTouchEnd={() => handleHardwareButton(false)}
-                  className="w-full bg-white hover:bg-blue-50 active:bg-blue-600 active:text-white border border-blue-300 py-2 rounded-lg text-xs font-semibold text-blue-700 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <i className="fa-solid fa-hand-pointer"></i> Press &amp; Hold Component Button
+              <div id="interactive-distance-wrapper" className="hidden flex items-center gap-2 shrink-0">
+                <span className="text-[10px] font-bold text-teal-600 shrink-0"><i className="fa-solid fa-ruler-horizontal mr-1"></i>HC-SR04</span>
+                <input id="hw-distance" type="range" min="2" max="400" defaultValue="100" onInput={(e) => handleDistanceSlider(e.target.value)} className="w-24 h-1.5 bg-slate-200 rounded appearance-none cursor-pointer accent-teal-600" />
+                <span id="distance-val" className="text-[10px] font-bold text-blue-700 w-12">100 cm</span>
+              </div>
+
+              <div id="interactive-pir-wrapper" className="hidden flex items-center gap-2 shrink-0">
+                <span className="text-[10px] font-bold text-emerald-600 shrink-0"><i className="fa-solid fa-person-walking mr-1"></i>PIR</span>
+                <button id="hw-pir-btn" onMouseDown={() => handlePirMotion(true)} onMouseUp={() => handlePirMotion(false)} onMouseLeave={() => handlePirMotion(false)} onTouchStart={() => handlePirMotion(true)} onTouchEnd={() => handlePirMotion(false)}
+                  className="bg-white hover:bg-blue-50 active:bg-emerald-600 active:text-white border border-blue-300 px-3 py-1 rounded-lg text-xs font-semibold text-blue-700 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap">
+                  Motion (hold)
                 </button>
               </div>
 
-              <div id="interactive-dht-wrapper" className="hidden space-y-2">
-                <span className="text-[10px] font-bold text-cyan-600 uppercase tracking-wider flex items-center gap-1.5">
-                  <i className="fa-solid fa-temperature-half"></i> DHT11 Climate
-                </span>
-                <div>
-                  <div className="flex justify-between text-[11px] text-slate-600 mb-1">
-                    <span>Temperature</span>
-                    <span id="dht-temp-val" className="font-bold text-blue-700">25°C</span>
-                  </div>
-                  <input
-                    id="hw-dht-temp"
-                    type="range"
-                    min="0"
-                    max="50"
-                    defaultValue="25"
-                    onInput={(e) => handleDhtTemp(e.target.value)}
-                    className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                  />
-                </div>
-                <div>
-                  <div className="flex justify-between text-[11px] text-slate-600 mb-1">
-                    <span>Humidity</span>
-                    <span id="dht-hum-val" className="font-bold text-blue-700">50%</span>
-                  </div>
-                  <input
-                    id="hw-dht-hum"
-                    type="range"
-                    min="0"
-                    max="100"
-                    defaultValue="50"
-                    onInput={(e) => handleDhtHumidity(e.target.value)}
-                    className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                  />
-                </div>
+              <div id="interactive-servo-wrapper" className="hidden flex items-center gap-2 shrink-0">
+                <span className="text-[10px] font-bold text-orange-600 shrink-0"><i className="fa-solid fa-gear mr-1"></i>Servo</span>
+                <input id="hw-servo-angle" type="range" min="0" max="180" defaultValue="90" onInput={(e) => handleServoAngle(e.target.value)} className="w-24 h-1.5 bg-slate-200 rounded appearance-none cursor-pointer accent-orange-600" />
+                <span id="servo-angle-val" className="text-[10px] font-bold text-blue-700 w-8">90°</span>
               </div>
 
-              <div id="interactive-distance-wrapper" className="hidden space-y-2">
-                <span className="text-[10px] font-bold text-teal-600 uppercase tracking-wider flex items-center gap-1.5">
-                  <i className="fa-solid fa-ruler-horizontal"></i> HC-SR04 Distance
-                </span>
-                <div className="flex justify-between text-[11px] text-slate-600 mb-1">
-                  <span>Obstacle range</span>
-                  <span id="distance-val" className="font-bold text-blue-700">100 cm</span>
-                </div>
-                <input
-                  id="hw-distance"
-                  type="range"
-                  min="2"
-                  max="400"
-                  defaultValue="100"
-                  onInput={(e) => handleDistanceSlider(e.target.value)}
-                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-600"
-                />
+              <div id="interactive-motor-wrapper" className="hidden flex items-center gap-2 shrink-0">
+                <span className="text-[10px] font-bold text-slate-600 shrink-0"><i className="fa-solid fa-fan mr-1"></i>Motor</span>
+                <input id="hw-motor-speed" type="range" min="-100" max="100" defaultValue="0" onInput={(e) => handleMotorSpeed(e.target.value)} className="w-24 h-1.5 bg-slate-200 rounded appearance-none cursor-pointer accent-blue-600" />
+                <span id="motor-speed-val" className="text-[10px] font-bold text-blue-700 w-8">0%</span>
               </div>
 
-              <div id="interactive-pir-wrapper" className="hidden space-y-2">
-                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1.5">
-                  <i className="fa-solid fa-person-walking"></i> PIR Motion
-                </span>
-                <button
-                  id="hw-pir-btn"
-                  onMouseDown={() => handlePirMotion(true)}
-                  onMouseUp={() => handlePirMotion(false)}
-                  onMouseLeave={() => handlePirMotion(false)}
-                  onTouchStart={() => handlePirMotion(true)}
-                  onTouchEnd={() => handlePirMotion(false)}
-                  className="w-full bg-white hover:bg-blue-50 active:bg-emerald-600 active:text-white border border-blue-300 py-2 rounded-lg text-xs font-semibold text-blue-700 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <i className="fa-solid fa-person-walking"></i> Simulate Motion (hold)
-                </button>
-              </div>
-
-              <div id="interactive-servo-wrapper" className="hidden space-y-2">
-                <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wider flex items-center gap-1.5">
-                  <i className="fa-solid fa-gear"></i> SG90 Servo
-                </span>
-                <div className="flex justify-between text-[11px] text-slate-600 mb-1">
-                  <span>Target angle</span>
-                  <span id="servo-angle-val" className="font-bold text-blue-700">90°</span>
-                </div>
-                <input
-                  id="hw-servo-angle"
-                  type="range"
-                  min="0"
-                  max="180"
-                  defaultValue="90"
-                  onInput={(e) => handleServoAngle(e.target.value)}
-                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-              </div>
-
-              <div id="interactive-motor-wrapper" className="hidden space-y-2">
-                <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                  <i className="fa-solid fa-fan"></i> DC Motor
-                </span>
-                <div className="flex justify-between text-[11px] text-slate-600 mb-1">
-                  <span>Speed (FWD + / REV −)</span>
-                  <span id="motor-speed-val" className="font-bold text-blue-700">0%</span>
-                </div>
-                <input
-                  id="hw-motor-speed"
-                  type="range"
-                  min="-100"
-                  max="100"
-                  defaultValue="0"
-                  onInput={(e) => handleMotorSpeed(e.target.value)}
-                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-              </div>
-
-              <div id="interactive-relay-wrapper" className="hidden space-y-2">
-                <span className="text-[10px] font-bold text-violet-600 uppercase tracking-wider flex items-center gap-1.5">
-                  <i className="fa-solid fa-toggle-on"></i> Relay Module
+              <div id="interactive-relay-wrapper" className="hidden flex items-center gap-2">
+                <span className="text-[10px] font-bold text-violet-600 uppercase tracking-wider shrink-0">
+                  <i className="fa-solid fa-toggle-on mr-1"></i>Relay
                 </span>
                 <button
                   id="hw-relay-btn"
@@ -395,44 +263,13 @@ export default function Workspace3D() {
                   onMouseLeave={() => handleRelayToggle(false)}
                   onTouchStart={() => handleRelayToggle(true)}
                   onTouchEnd={() => handleRelayToggle(false)}
-                  className="w-full bg-white hover:bg-blue-50 active:bg-violet-600 active:text-white border border-blue-300 py-2 rounded-lg text-xs font-semibold text-blue-700 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="bg-white hover:bg-blue-50 active:bg-violet-600 active:text-white border border-blue-300 px-3 py-1 rounded-lg text-xs font-semibold text-blue-700 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                 >
-                  <i className="fa-solid fa-toggle-on"></i> Energize Relay (hold)
+                  Energize (hold)
                 </button>
               </div>
             </div>
-
-            {/* Tip */}
-            <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2.5">
-              <i className="fa-solid fa-lightbulb text-amber-500 text-xs mt-0.5 shrink-0"></i>
-              <p id="step-tip" className="text-[11px] text-amber-900 leading-relaxed">
-                Hold left click to rotate. Scroll to zoom. Use the IDE panel to write custom firmware.
-              </p>
-            </div>
-
-            {/* Step navigation */}
-            <div className="flex items-center justify-between pt-1 border-t border-slate-100">
-              <button
-                id="btn-prev"
-                onClick={() => moveStep(-1)}
-                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 disabled:opacity-30 transition-colors rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-              >
-                <i className="fa-solid fa-chevron-left text-[10px]"></i> Back
-              </button>
-              <div className="flex gap-1" id="step-dot-container"></div>
-              <button
-                id="btn-next"
-                onClick={() => moveStep(1)}
-                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white transition-colors rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-              >
-                Next <i className="fa-solid fa-chevron-right text-[10px]"></i>
-              </button>
-            </div>
           </div>
-        </div>
-
-        {/* ── RIGHT: AI Tutor ── */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-white">
 
           {/* ── Zone 1: Header (always visible, fixed) ── */}
           <div className="px-3 pt-2.5 pb-2 border-b border-slate-100 shrink-0 flex items-center gap-2">
@@ -448,25 +285,7 @@ export default function Workspace3D() {
 
           {/* ── Zone 2: Welcome (collapsed after first message) ── */}
           <div id="tutor-welcome" className="shrink-0 px-3 pt-2.5 pb-2.5 border-b border-slate-50 bg-slate-50/50">
-            {/* Preset lab chips */}
-            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5">Quick Labs</p>
-            <div className="flex flex-wrap gap-1 mb-3">
-              <button onClick={() => applyPreset('blink')}
-                className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-700 rounded-lg px-2 py-1 transition-all duration-150 cursor-pointer font-medium shadow-sm">
-                <i className="fa-solid fa-lightbulb text-amber-400" style={{ fontSize: '9px' }}></i> LED Blink
-              </button>
-              <button onClick={() => applyPreset('night')}
-                className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-lg px-2 py-1 transition-all duration-150 cursor-pointer font-medium shadow-sm">
-                <i className="fa-solid fa-moon text-slate-400" style={{ fontSize: '9px' }}></i> Night Light
-              </button>
-              <button onClick={() => applyPreset('alarm')}
-                className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-red-50 hover:border-red-200 hover:text-red-600 rounded-lg px-2 py-1 transition-all duration-150 cursor-pointer font-medium shadow-sm">
-                <i className="fa-solid fa-bell text-red-400" style={{ fontSize: '9px' }}></i> Alarm
-              </button>
-              <button onClick={() => applyPreset('button')}
-                className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 rounded-lg px-2 py-1 transition-all duration-150 cursor-pointer font-medium shadow-sm">
-                <i className="fa-solid fa-hand-pointer text-blue-400" style={{ fontSize: '9px' }}></i> Button
-              </button>
+            <div className="flex flex-wrap gap-1 mb-2">
               <button onClick={openCommunityLibrary}
                 className="inline-flex items-center gap-1 text-[10px] bg-gradient-to-r from-purple-500 to-blue-600 text-white hover:from-purple-600 hover:to-blue-700 rounded-lg px-2 py-1 transition-all duration-150 cursor-pointer font-semibold shadow-sm">
                 <i className="fa-solid fa-users" style={{ fontSize: '8px' }}></i> Community

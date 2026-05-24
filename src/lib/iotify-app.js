@@ -184,7 +184,7 @@
 
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
 
-        // Procedural Circuit Presets
+        // Procedural Circuit Presets (unused — app now starts in free-build mode)
         const PRESETS = {
             blink: {
                 title: "Classic LED Blink",
@@ -558,12 +558,12 @@ void loop() {
                          { name:'pin2',        pos:[ 0.59,0,-0.41],color:'#94a3b8' },
                          { name:'pin3',        pos:[-0.59,0, 0.41],color:'#94a3b8' },
                          { name:'pin4',        pos:[ 0.59,0, 0.41],color:'#94a3b8' }],
-          ldr:          [{ name:'pin1',        pos:[-0.08,0.1,0],   color:'#94a3b8' },
-                         { name:'pin2',        pos:[ 0.08,0.1,0],   color:'#94a3b8' }],
-          dht11:        [{ name:'VCC',         pos:[-0.42,0.1,0],   color:'#ef4444' },
-                         { name:'DATA',        pos:[-0.14,0.1,0],   color:'#6366f1' },
-                         { name:'NC',          pos:[ 0.14,0.1,0],   color:'#94a3b8' },
-                         { name:'GND',         pos:[ 0.42,0.1,0],   color:'#1e293b' }],
+          ldr:          [{ name:'pin1',        pos:[-0.11,0.12,0],  color:'#94a3b8' },
+                         { name:'pin2',        pos:[ 0.11,0.12,0],  color:'#94a3b8' }],
+          dht11:        [{ name:'VCC',         pos:[-0.29,0.12,0],  color:'#ef4444' },
+                         { name:'DATA',        pos:[-0.1,0.12,0],  color:'#6366f1' },
+                         { name:'NC',          pos:[ 0.1,0.12,0],  color:'#94a3b8' },
+                         { name:'GND',         pos:[ 0.29,0.12,0],  color:'#1e293b' }],
           hcsr04:       [{ name:'VCC',         pos:[-1.14,0.06,0],  color:'#ef4444' },
                          { name:'TRIG',        pos:[-0.38,0.06,0],  color:'#6366f1' },
                          { name:'ECHO',        pos:[ 0.38,0.06,0],  color:'#fbbf24' },
@@ -592,16 +592,12 @@ void loop() {
                          { name:'GND-2',       pos:[ 1.65,0.14, 3.0],color:'#1e293b' }],
         };
 
-        let activePreset = "blink";
-        let activeStep = 0;
         let isSimulating = false;
         let simInterval = null;
 
         // Three.js State variables
         let scene, camera, renderer, controls;
         let meshGroup;
-        let activeLdrLevel = 50;
-        let activeButtonState = false;
         const freeBuildState = {
             activeTempC: 25,
             activeHumidity: 50,
@@ -640,10 +636,6 @@ void loop() {
             sld('hw-motor-speed', freeBuildState.activeMotorSpeed);
         }
 
-        // Custom meshes stored globally for access/anim
-        let customMeshes = {};
-        let activeWireMeshes = [];
-
         // Parts Library / Free Build state
         let placedComponents = [];
         let selectedComponent = null;
@@ -651,7 +643,7 @@ void loop() {
         let draggedPartData = null;
         let componentCounters = {};
         let activeTab = 'copilot';
-        let isFreeBuildMode = false;
+        let isFreeBuildMode = true;
 
         // Drag-to-move state (moving placed components in 3D)
         let dragComponent  = null;   // THREE.Group being dragged
@@ -703,123 +695,8 @@ void loop() {
                 return;
             }
 
-            // Always use the component-library builder — auto-switch to free-build mode if needed
-            if (!isFreeBuildMode) enterFreeBuildMode();
             inputField.value = '';
             await generateAIFreeBuildCircuit(promptText);
-            return;
-
-            // ── legacy preset-based generator (kept for reference, unreachable) ──
-            showToast("AI is architecting your custom hardware setup...", true);
-
-            const fetchWithRetry = async (url, options, retries = 5, delay = 1000) => {
-                try {
-                    const response = await fetch(url, options);
-                    if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
-                    return await response.json();
-                } catch (error) {
-                    if (retries <= 0) throw error;
-                    await new Promise(res => setTimeout(res, delay));
-                    return fetchWithRetry(url, options, retries - 1, delay * 2);
-                }
-            };
-
-            const systemPrompt = `You are an advanced IoT hardware engineer. Based on the user's idea, design a step-by-step 3D electronic tutorial.
-Return ONLY a valid JSON object matching this TypeScript structure:
-{
-  "title": "Short title describing the project",
-  "topic": "General Education or Public and Higher Education",
-  "steps": [
-    {
-      "title": "Step label",
-      "desc": "Detailed instructional instructions guiding connections",
-      "tip": "Safety/engineering advice",
-      "camera": { "x": number, "y": number, "z": number },
-      "lookAt": { "x": number, "y": number, "z": number },
-      "visible": ["board", "breadboard", "led", "resistor", "ldr", "buzzer", "button", "wire_gnd", "wire_sig"]
-    }
-  ],
-  "wires": [
-    { "type": "wire_gnd" | "wire_sig", "color": "hex string", "path": [[number, number, number], [number, number, number]] }
-  ],
-  "activeComponent": "led" | "ldr" | "buzzer" | "button",
-  "interactiveType": "none" | "slider" | "button",
-  "schematic": "Valid HTML SVG string fitting within a 400x300 viewBox containing standard circuit representations",
-  "code": "C++ code compatible with the Arduino Uno microcontroller for this simulation"
-}`;
-
-            try {
-                if (!apiKey) throw new Error("Missing API Key");
-
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-                const payload = {
-                    contents: [{ parts: [{ text: `User request: "${promptText}"` }] }],
-                    systemInstruction: { parts: [{ text: systemPrompt }] },
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                            type: "OBJECT",
-                            properties: {
-                                title: { type: "STRING" },
-                                topic: { type: "STRING" },
-                                steps: {
-                                    type: "ARRAY",
-                                    items: {
-                                        type: "OBJECT",
-                                        properties: {
-                                            title: { type: "STRING" },
-                                            desc: { type: "STRING" },
-                                            tip: { type: "STRING" },
-                                            camera: { type: "OBJECT", properties: { x: { type: "NUMBER" }, y: { type: "NUMBER" }, z: { type: "NUMBER" } } },
-                                            lookAt: { type: "OBJECT", properties: { x: { type: "NUMBER" }, y: { type: "NUMBER" }, z: { type: "NUMBER" } } },
-                                            visible: { type: "ARRAY", items: { type: "STRING" } }
-                                        }
-                                    }
-                                },
-                                wires: {
-                                    type: "ARRAY",
-                                    items: {
-                                        type: "OBJECT",
-                                        properties: {
-                                            type: { type: "STRING" },
-                                            color: { type: "STRING" },
-                                            path: { type: "ARRAY", items: { type: "ARRAY", items: { type: "NUMBER" } } }
-                                        }
-                                    }
-                                },
-                                activeComponent: { type: "STRING" },
-                                interactiveType: { type: "STRING" },
-                                schematic: { type: "STRING" },
-                                code: { type: "STRING" }
-                            },
-                            required: ["title", "topic", "steps", "wires", "activeComponent", "interactiveType", "schematic", "code"]
-                        }
-                    }
-                };
-
-                const data = await fetchWithRetry(endpoint, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-
-                const parsedResult = JSON.parse(data.candidates[0].content.parts[0].text);
-                PRESETS["ai-generated"] = parsedResult;
-                applyPreset("ai-generated");
-                showToast("AI has generated your laboratory sandbox! Enjoy experimenting.", false);
-            } catch (err) {
-                let fallbackKey = "blink";
-                if (promptText.toLowerCase().includes("light") || promptText.toLowerCase().includes("dark") || promptText.toLowerCase().includes("ldr")) {
-                    fallbackKey = "night";
-                } else if (promptText.toLowerCase().includes("siren") || promptText.toLowerCase().includes("sound") || promptText.toLowerCase().includes("buzz") || promptText.toLowerCase().includes("alarm")) {
-                    fallbackKey = "alarm";
-                } else if (promptText.toLowerCase().includes("button") || promptText.toLowerCase().includes("switch") || promptText.toLowerCase().includes("press")) {
-                    fallbackKey = "button";
-                }
-                await new Promise(r => setTimeout(r, 1200));
-                applyPreset(fallbackKey);
-                showToast("Lab generated successfully using offline local patterns!", false);
-            }
         }
 
         // ========================================================
@@ -1069,17 +946,15 @@ LAYOUT RULES:
 
         /** Build a plain-English summary of the current circuit for context */
         function buildCircuitContext() {
-            if (isFreeBuildMode && placedComponents.length > 0) {
+            if (placedComponents.length > 0) {
                 const compList = placedComponents
                     .map(g => g.userData.label || g.userData.type)
                     .join(', ');
                 const wireCount = placedWires.length;
                 const code = (document.getElementById('code-content')?.value || '').substring(0, 600);
-                return `The student is in free-build mode with the following components: ${compList}. ${wireCount} wire(s) connected.\n\nFirmware code currently loaded:\n${code}`;
+                return `The student has the following components placed: ${compList}. ${wireCount} wire(s) connected.\n\nFirmware code currently loaded:\n${code}`;
             }
-            const preset = PRESETS[activePreset];
-            const step   = preset?.steps[activeStep];
-            return `The student is following the "${preset?.title || activePreset}" guided lab. Current step ${activeStep + 1}: "${step?.title}" — ${step?.desc}`;
+            return 'The student has an empty canvas. No components placed yet.';
         }
 
         /** Ask the AI tutor a question and stream the reply into the chat panel */
@@ -1186,75 +1061,12 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             }
         }
 
-        function applyPreset(key) {
-            activePreset = key;
-            activeStep = 0;
-            undoStack = [];
-            redoStack = [];
-            updateUndoRedoUI();
-
-            const data = PRESETS[key];
-            document.getElementById("status-badge").innerHTML = `<span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span> ${data.topic}`;
-
-            if(isSimulating) toggleSimulation();
-
-            renderCurrentStep();
-            buildInteractiveControls();
-            rebuildWiresIn3D(data.wires);
-            updateComponentVisibilities();
-
-            document.getElementById("svg-schematic").innerHTML = data.schematic;
-            glideCamera(data.steps[0].camera, data.steps[0].lookAt);
-        }
-
-        function renderCurrentStep() {
-            const data = PRESETS[activePreset];
-            const step = data.steps[activeStep];
-
-            document.getElementById("step-index").textContent = `Step ${activeStep + 1} of ${data.steps.length}`;
-            document.getElementById("step-title").textContent = step.title;
-            document.getElementById("step-desc").textContent = step.desc;
-            document.getElementById("step-tip").textContent = step.tip;
-            document.getElementById("code-content").value = data.code;
-
-            const container = document.getElementById("step-dot-container");
-            container.innerHTML = "";
-            data.steps.forEach((_, idx) => {
-                const dot = document.createElement("div");
-                dot.className = `w-2 h-2 rounded-full transition-all duration-300 ${idx === activeStep ? 'bg-indigo-600 w-5' : 'bg-slate-300'}`;
-                container.appendChild(dot);
-            });
-
-            document.getElementById("btn-prev").disabled = activeStep === 0;
-            const nextBtn = document.getElementById("btn-next");
-            if(activeStep === data.steps.length - 1) {
-                nextBtn.innerHTML = `Start Sim <i class="fa-solid fa-play ml-1"></i>`;
-                nextBtn.className = "px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white transition-colors rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer";
-            } else {
-                nextBtn.innerHTML = `Next <i class="fa-solid fa-chevron-right"></i>`;
-                nextBtn.className = "px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer";
-            }
-        }
-
         function moveStep(direction) {
-            // In free-build mode, navigate AI-generated steps (no camera moves)
-            if (isFreeBuildMode && aiFreeBuildSteps.length > 0) {
+            if (aiFreeBuildSteps.length > 0) {
                 const target = aiFreeBuildStepIndex + direction;
                 if (target >= 0 && target < aiFreeBuildSteps.length) {
                     renderAIFreeBuildStep(target);
                 }
-                return;
-            }
-            const data = PRESETS[activePreset];
-            const target = activeStep + direction;
-            if(target >= 0 && target < data.steps.length) {
-                activeStep = target;
-                renderCurrentStep();
-                const step = data.steps[activeStep];
-                glideCamera(step.camera, step.lookAt);
-                updateComponentVisibilities();
-            } else if (target === data.steps.length) {
-                toggleSimulation();
             }
         }
 
@@ -1273,11 +1085,6 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
         function buildFreeBuildInteractiveControls() {
             hideFreeBuildControlWrappers();
             const container = document.getElementById("interactive-hardware-control");
-            const sliderWrapper = document.getElementById("interactive-slider-wrapper");
-            const btnWrapper = document.getElementById("interactive-btn-wrapper");
-            if (sliderWrapper) sliderWrapper.classList.add('hidden');
-            if (btnWrapper) btnWrapper.classList.add('hidden');
-
             const types = new Set(placedComponents.map(g => g.userData.type));
             const hasInteractive = FREE_BUILD_INTERACTIVE_TYPES.some(t => types.has(t));
             if (!hasInteractive || !container) {
@@ -1291,40 +1098,6 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             if (types.has('servo')) document.getElementById('interactive-servo-wrapper')?.classList.remove('hidden');
             if (types.has('dc_motor') || types.has('l298n')) document.getElementById('interactive-motor-wrapper')?.classList.remove('hidden');
             if (types.has('relay')) document.getElementById('interactive-relay-wrapper')?.classList.remove('hidden');
-        }
-
-        function buildInteractiveControls() {
-            hideFreeBuildControlWrappers();
-            const data = PRESETS[activePreset];
-            const container = document.getElementById("interactive-hardware-control");
-            const sliderWrapper = document.getElementById("interactive-slider-wrapper");
-            const btnWrapper = document.getElementById("interactive-btn-wrapper");
-
-            if(data.interactiveType === "none") {
-                container.classList.add("hidden");
-            } else {
-                container.classList.remove("hidden");
-                if(data.interactiveType === "slider") {
-                    sliderWrapper.classList.remove("hidden");
-                    btnWrapper.classList.add("hidden");
-                } else if(data.interactiveType === "button") {
-                    btnWrapper.classList.remove("hidden");
-                    sliderWrapper.classList.add("hidden");
-                }
-            }
-        }
-
-        function updateComponentVisibilities() {
-            const data = PRESETS[activePreset];
-            const step = data.steps[activeStep];
-
-            Object.keys(customMeshes).forEach(key => {
-                customMeshes[key].visible = step.visible.includes(key);
-            });
-
-            activeWireMeshes.forEach(wire => {
-                wire.visible = step.visible.includes(wire.name);
-            });
         }
 
         function toggleIdeDrawer() {}
@@ -1667,28 +1440,6 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             // Ground plane for raycasting (y=0, normal up)
             groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
-            // Build preset components and register them
-            const _board = buildArduinoBoard(-2.5, 0); meshGroup.add(_board); customMeshes["board"] = _board;
-            const _bb    = buildBreadboard(2.5, 0);    meshGroup.add(_bb);    customMeshes["breadboard"] = _bb;
-            const _led   = buildLED(2.5, -0.8, 'red'); meshGroup.add(_led);   customMeshes["led"] = _led;
-            const _res   = buildResistor(3.4, -0.8, '220'); meshGroup.add(_res); customMeshes["resistor"] = _res;
-            const _buz   = buildPiezoBuzzer(2.5, 0.8); meshGroup.add(_buz);   customMeshes["buzzer"] = _buz;
-            const _btn   = buildButton(2.5, 1.8);      meshGroup.add(_btn);   customMeshes["button"] = _btn;
-            const _ldr   = buildLDR(2.5, -1.8);        meshGroup.add(_ldr);   customMeshes["ldr"] = _ldr;
-            const _capE  = buildCapacitor(3.4, 0.2, 'electrolytic'); meshGroup.add(_capE); customMeshes["capacitor_electro"] = _capE;
-            const _capC  = buildCapacitor(3.4, 1.2, 'ceramic'); meshGroup.add(_capC); customMeshes["capacitor_ceramic"] = _capC;
-            const _pot   = buildPotentiometer(3.4, -1.8); meshGroup.add(_pot); customMeshes["potentiometer"] = _pot;
-            const _therm = buildThermistor(3.4, -2.8); meshGroup.add(_therm); customMeshes["thermistor"] = _therm;
-            const _npn   = buildTransistor(4.5, 0, 'NPN'); meshGroup.add(_npn); customMeshes["npn"] = _npn;
-            const _pnp   = buildTransistor(4.5, 1.0, 'PNP'); meshGroup.add(_pnp); customMeshes["pnp"] = _pnp;
-            const _dht   = buildDHT11(4.5, -1.5); meshGroup.add(_dht); customMeshes["dht11"] = _dht;
-            const _sonar = buildHCSR04(4.5, 0); meshGroup.add(_sonar); customMeshes["hcsr04"] = _sonar;
-            const _pirM  = buildPIR(4.5, 1.5); meshGroup.add(_pirM); customMeshes["pir"] = _pirM;
-            const _servo = buildServo(5.5, -1.5); meshGroup.add(_servo); customMeshes["servo"] = _servo;
-            const _l298n = buildMotorL298n(5.5, 0); meshGroup.add(_l298n); customMeshes["l298n"] = _l298n;
-            const _dcm = buildDcMotor(6.4, 0); meshGroup.add(_dcm); customMeshes["dc_motor"] = _dcm;
-            const _relay = buildRelay(5.5, 1.5); meshGroup.add(_relay); customMeshes["relay"] = _relay;
-
             meshGroup.position.set(0, 0, 0);
 
             // Drag-and-drop: part cards → canvas
@@ -1773,8 +1524,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
         }
 
         function resetCamera() {
-            const data = PRESETS[activePreset];
-            glideCamera(data.steps[activeStep].camera, data.steps[activeStep].lookAt);
+            glideCamera({ x: 0, y: 15, z: 8 }, { x: 0, y: 0, z: 0 });
         }
 
         // ========================================================
@@ -1824,7 +1574,8 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             SERVO_H: partU(27),
             L298N_W: partU(43),
             L298N_D: partU(43),
-            L298N_H: partU(3),
+            L298N_PCB_T: partU(1.6),
+            L298N_HS_H: partU(24),
             MOTOR_R: partU(12),
             MOTOR_LEN: partU(25),
             RELAY_W: partU(50),
@@ -1843,9 +1594,9 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             });
         }
 
-        function addSmdPad(group, x, y, z, w = 0.06, d = 0.04) {
+        function addSmdPad(group, x, y, z, w = partU(2.4), d = partU(1.6)) {
             const pad = new THREE.Mesh(
-                new THREE.BoxGeometry(w, 0.008, d),
+                new THREE.BoxGeometry(w, partU(0.25), d),
                 new THREE.MeshStandardMaterial({ color: "#94a3b8", metalness: 0.85, roughness: 0.2 })
             );
             pad.position.set(x, y, z);
@@ -2341,29 +2092,38 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             g.position.set(x, 0.12, z);
 
             const lr = PART_DIM.LDR_R;
+            const py = PART_DIM.PIN_LEN / 2;
+            const baseH = partU(1.6);
+            const discH = partU(1.1);
+
             const base = new THREE.Mesh(
-                new THREE.CylinderGeometry(lr, lr + 0.02, 0.045, 16),
+                new THREE.CylinderGeometry(lr, lr + partU(0.3), baseH, 16),
                 new THREE.MeshStandardMaterial({ color: "#f1f5f9", roughness: 0.7 })
             );
-            base.position.y = 0.14;
+            base.position.y = py + baseH / 2;
             base.castShadow = true;
             g.add(base);
 
             const disc = new THREE.Mesh(
-                new THREE.CylinderGeometry(lr - 0.02, lr - 0.02, 0.022, 20),
+                new THREE.CylinderGeometry(lr * 0.92, lr * 0.92, discH, 20),
                 new THREE.MeshStandardMaterial({ color: "#e2e8f0", roughness: 0.25, metalness: 0.1 })
             );
-            disc.position.y = 0.2;
+            disc.position.y = base.position.y + baseH / 2 + discH / 2;
             g.add(disc);
 
             const traceMat = new THREE.MeshBasicMaterial({ color: "#f97316" });
+            const traceW = lr * 1.6;
+            const traceH = partU(0.35);
             for (let i = -2; i <= 2; i++) {
-                const seg = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.006, 0.01), traceMat);
-                seg.position.set(i * 0.02, 0.21, 0);
+                const seg = new THREE.Mesh(
+                    new THREE.BoxGeometry(traceW / 5, traceH, partU(0.25)),
+                    traceMat
+                );
+                seg.position.set(i * traceW / 10, disc.position.y + discH / 2, 0);
                 g.add(seg);
             }
 
-            addThroughHolePins(g, [-0.08, 0.08], 0.1);
+            addThroughHolePins(g, [-lr * 1.1, lr * 1.1], py);
 
             return g;
         }
@@ -2397,42 +2157,54 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             g.add(face);
 
             const grillMat = new THREE.MeshBasicMaterial({ color: "#7dd3fc" });
+            const slotW = w * 0.11;
+            const slotH = h * 0.06;
             for (let row = 0; row < 4; row++) {
                 for (let col = 0; col < 3; col++) {
-                    const slot = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.014, 0.012), grillMat);
-                    slot.position.set(-0.075 + col * 0.075, 0.2 + row * 0.055, d / 2 + 0.01);
+                    const slot = new THREE.Mesh(
+                        new THREE.BoxGeometry(slotW, slotH, partU(0.35)),
+                        grillMat
+                    );
+                    slot.position.set(
+                        -slotW + col * slotW,
+                        h * 0.35 + row * slotH * 1.15,
+                        d / 2 + partU(0.35)
+                    );
                     g.add(slot);
                 }
             }
 
-            addThroughHolePins(g, [-0.11, -0.04, 0.04, 0.11], 0.1);
+            const pitch = partU(2.54);
+            addThroughHolePins(g, [-pitch * 1.5, -pitch * 0.5, pitch * 0.5, pitch * 1.5], PART_DIM.PIN_LEN / 2);
 
             return g;
         }
 
-        function buildSonarTransducer(parent, name, px) {
+        function buildSonarTransducer(parent, name, px, sw) {
+            const tr = sw * 0.085;
+            const th = partU(5);
             const housing = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.115, 0.12, 0.075, 20),
+                new THREE.CylinderGeometry(tr, tr * 1.04, th, 20),
                 new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.55, roughness: 0.35, emissive: 0x000000, emissiveIntensity: 0.15 })
             );
             housing.name = name;
-            housing.position.set(px, 0.26, 0);
+            housing.position.set(px, PART_DIM.PIN_LEN / 2 + th * 0.85, 0);
             housing.castShadow = true;
             parent.add(housing);
 
             const mesh = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.09, 0.07, 0.04, 16),
+                new THREE.CylinderGeometry(tr * 0.78, tr * 0.62, th * 0.55, 16),
                 new THREE.MeshStandardMaterial({ color: "#64748b", metalness: 0.4, roughness: 0.5 })
             );
-            mesh.position.set(px, 0.29, 0);
+            mesh.position.set(px, housing.position.y + th * 0.22, 0);
             parent.add(mesh);
 
             const ring = new THREE.Mesh(
-                new THREE.TorusGeometry(0.085, 0.01, 10, 20),
+                new THREE.TorusGeometry(tr * 0.74, partU(0.45), 10, 20),
                 new THREE.MeshStandardMaterial({ color: "#94a3b8", metalness: 0.7, roughness: 0.25 })
             );
             ring.rotation.x = Math.PI / 2;
-            ring.position.set(px, 0.275, 0);
+            ring.position.set(px, housing.position.y + th * 0.12, 0);
             parent.add(ring);
         }
 
@@ -2442,33 +2214,34 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
 
             const sw = PART_DIM.SONAR_W;
             const sd = PART_DIM.SONAR_D;
-            const pcb = new THREE.Mesh(new THREE.BoxGeometry(sw, 0.06, sd), partPcbMat("#14532d"));
-            pcb.position.y = 0.14;
+            const pcbT = partU(1.6);
+            const pcb = new THREE.Mesh(new THREE.BoxGeometry(sw, pcbT, sd), partPcbMat("#14532d"));
+            pcb.position.y = PART_DIM.PIN_LEN / 2 + pcbT / 2;
             pcb.castShadow = true;
             g.add(pcb);
 
-            buildSonarTransducer(g, 'sonarEyeLeft', -sw * 0.25);
-            buildSonarTransducer(g, 'sonarEyeRight', sw * 0.25);
+            buildSonarTransducer(g, 'sonarEyeLeft', -sw * 0.25, sw);
+            buildSonarTransducer(g, 'sonarEyeRight', sw * 0.25, sw);
 
             const ic = new THREE.Mesh(
-                new THREE.BoxGeometry(0.12, 0.04, 0.1),
+                new THREE.BoxGeometry(sw * 0.14, partU(3.5), sw * 0.12),
                 new THREE.MeshStandardMaterial({ color: "#0f172a", roughness: 0.8 })
             );
-            ic.position.set(0, 0.19, 0);
+            ic.position.set(0, pcb.position.y + pcbT / 2 + partU(1.8), 0);
             g.add(ic);
-            addSmdPad(g, -0.04, 0.17, 0.02);
-            addSmdPad(g, 0.04, 0.17, -0.02);
+            addSmdPad(g, -sw * 0.04, pcb.position.y, sd * 0.06);
+            addSmdPad(g, sw * 0.04, pcb.position.y, -sd * 0.06);
 
             [-sw * 0.4, sw * 0.4].forEach(px => {
                 const hole = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.016, 0.016, 0.065, 8),
+                    new THREE.CylinderGeometry(partU(1.6), partU(1.6), pcbT * 1.1, 8),
                     new THREE.MeshBasicMaterial({ color: "#1e293b" })
                 );
-                hole.position.set(px, 0.14, sd * 0.38);
+                hole.position.set(px, pcb.position.y, sd * 0.38);
                 g.add(hole);
             });
 
-            addThroughHolePins(g, [-sw * 0.33, -sd * 0.2, sd * 0.2, sw * 0.33], 0.06);
+            addThroughHolePins(g, [-sw * 0.33, -sd * 0.2, sd * 0.2, sw * 0.33], PART_DIM.PIN_LEN / 2);
 
             return g;
         }
@@ -2479,40 +2252,43 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
 
             const pw = PART_DIM.PIR_W;
             const pd = PART_DIM.PIR_D;
-            const pcb = new THREE.Mesh(new THREE.BoxGeometry(pw, 0.05, pd), partPcbMat("#166534"));
-            pcb.position.y = 0.12;
+            const pcbT = partU(1.4);
+            const lensR = Math.min(pw, pd) * 0.24;
+            const pcb = new THREE.Mesh(new THREE.BoxGeometry(pw, pcbT, pd), partPcbMat("#166534"));
+            pcb.position.y = PART_DIM.PIN_LEN / 2 + pcbT / 2;
             pcb.castShadow = true;
             g.add(pcb);
 
             const pot = new THREE.Mesh(
-                new THREE.BoxGeometry(0.08, 0.05, 0.08),
+                new THREE.BoxGeometry(pw * 0.18, partU(4), pw * 0.18),
                 new THREE.MeshStandardMaterial({ color: "#475569", roughness: 0.6 })
             );
-            pot.position.set(0.16, 0.2, -0.1);
+            pot.position.set(pw * 0.22, pcb.position.y + pcbT / 2 + partU(2.5), -pd * 0.18);
             g.add(pot);
 
             const domeMat = new THREE.MeshStandardMaterial({ color: "#f8fafc", roughness: 0.85, emissive: 0x000000, emissiveIntensity: 0 });
+            const domeBase = pcb.position.y + pcbT / 2 + partU(2);
             for (let i = 0; i < 4; i++) {
                 const ring = new THREE.Mesh(
-                    new THREE.TorusGeometry(0.08 + i * 0.035, 0.008, 8, 24),
+                    new THREE.TorusGeometry(lensR * 0.55 + i * lensR * 0.14, partU(0.45), 8, 24),
                     domeMat
                 );
                 ring.rotation.x = Math.PI / 2;
-                ring.position.y = 0.26 + i * 0.012;
+                ring.position.y = domeBase + i * partU(1.1);
                 ring.castShadow = i === 3;
                 g.add(ring);
             }
 
             const lens = new THREE.Mesh(
-                new THREE.SphereGeometry(0.06, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+                new THREE.SphereGeometry(lensR, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2),
                 domeMat
             );
             lens.name = 'pirDome';
-            lens.position.y = 0.3;
+            lens.position.y = domeBase + lensR * 0.75;
             lens.castShadow = true;
             g.add(lens);
 
-            addThroughHolePins(g, [-pw * 0.22, 0, pw * 0.22], 0.05);
+            addThroughHolePins(g, [-pw * 0.22, 0, pw * 0.22], PART_DIM.PIN_LEN / 2);
 
             return g;
         }
@@ -2535,27 +2311,36 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             g.add(base);
 
             const tabY = baseH * 0.62;
+            const tabW = baseW * 0.09;
+            const tabD = baseD * 0.55;
             [-1, 1].forEach(sign => {
-                const tabX = sign * (baseW / 2 + 0.05);
-                const tab = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.034, 0.16), blue);
+                const tabX = sign * (baseW / 2 + partU(4));
+                const tab = new THREE.Mesh(new THREE.BoxGeometry(tabW, partU(3.4), tabD), blue);
                 tab.position.set(tabX, tabY, 0);
                 tab.castShadow = true;
                 g.add(tab);
                 const tabHole = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.018, 0.018, 0.038, 12),
+                    new THREE.CylinderGeometry(partU(1.8), partU(1.8), partU(3.8), 12),
                     new THREE.MeshBasicMaterial({ color: "#0f172a" })
                 );
                 tabHole.position.set(tabX, tabY, 0);
                 g.add(tabHole);
             });
 
-            const mountScrew = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.01, 10), metal);
+            const earX = -(baseW / 2 + partU(4));
+            const mountScrew = new THREE.Mesh(
+                new THREE.CylinderGeometry(partU(2.2), partU(2.2), partU(1), 10),
+                metal
+            );
             mountScrew.rotation.x = Math.PI / 2;
-            mountScrew.position.set(-(baseW / 2 + 0.05), tabY + 0.018, 0);
+            mountScrew.position.set(earX, tabY + partU(1.8), 0);
             g.add(mountScrew);
-            const washer = new THREE.Mesh(new THREE.TorusGeometry(0.027, 0.004, 8, 16), metal);
+            const washer = new THREE.Mesh(
+                new THREE.TorusGeometry(partU(2.7), partU(0.4), 8, 16),
+                metal
+            );
             washer.rotation.x = Math.PI / 2;
-            washer.position.set(-(baseW / 2 + 0.05), tabY + 0.012, 0);
+            washer.position.set(earX, tabY + partU(1.2), 0);
             g.add(washer);
 
             const topH = PART_DIM.SERVO_H * 0.42;
@@ -2570,31 +2355,31 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             boss.castShadow = true;
             g.add(boss);
 
-            const labelZ = baseD / 2 + 0.003;
+            const labelZ = baseD / 2 + partU(0.25);
             const labelY = baseH * 0.82;
             const labelFrame = new THREE.Mesh(
-                new THREE.BoxGeometry(baseW * 0.65, PART_DIM.SERVO_H * 0.1, 0.008),
+                new THREE.BoxGeometry(baseW * 0.65, PART_DIM.SERVO_H * 0.1, partU(0.25)),
                 new THREE.MeshStandardMaterial({ color: "#c0c0c0", metalness: 0.65, roughness: 0.28 })
             );
             labelFrame.position.set(0, labelY, labelZ);
             g.add(labelFrame);
             const labelGold = new THREE.Mesh(
-                new THREE.BoxGeometry(baseW * 0.55, PART_DIM.SERVO_H * 0.075, 0.006),
+                new THREE.BoxGeometry(baseW * 0.55, PART_DIM.SERVO_H * 0.075, partU(0.2)),
                 new THREE.MeshStandardMaterial({ color: "#d4af37", roughness: 0.32, metalness: 0.25 })
             );
-            labelGold.position.set(0, labelY, labelZ + 0.003);
+            labelGold.position.set(0, labelY, labelZ + partU(0.2));
             g.add(labelGold);
             const lineMat = new THREE.MeshBasicMaterial({ color: "#1e293b" });
-            [0.032, 0, -0.032].forEach((dy, i) => {
+            [partU(3.2), 0, -partU(3.2)].forEach((dy, i) => {
                 const line = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.2 - i * 0.025, 0.011, 0.003),
+                    new THREE.BoxGeometry(baseW * 0.55 - i * partU(2.5), partU(1.1), partU(0.25)),
                     lineMat
                 );
-                line.position.set(0, labelY + dy, labelZ + 0.006);
+                line.position.set(0, labelY + dy, labelZ + partU(0.45));
                 g.add(line);
             });
 
-            const hornY = baseH + topH + bossH + 0.008;
+            const hornY = baseH + topH + bossH + partU(0.6);
             const hornGroup = new THREE.Group();
             hornGroup.name = 'servoHorn';
             hornGroup.position.set(0, hornY, 0.02);
@@ -2603,13 +2388,19 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             hub.rotation.x = Math.PI / 2;
             hornGroup.add(hub);
 
-            const hornScrew = new THREE.Mesh(new THREE.CylinderGeometry(0.021, 0.021, 0.012, 10), metal);
+            const hornScrew = new THREE.Mesh(
+                new THREE.CylinderGeometry(partU(2.1), partU(2.1), partU(1.2), 10),
+                metal
+            );
             hornScrew.rotation.x = Math.PI / 2;
-            hornScrew.position.y = 0.015;
+            hornScrew.position.y = partU(1.5);
             hornGroup.add(hornScrew);
 
             const addHornHole = (hx, hz) => {
-                const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.024, 8), holeMat);
+                const hole = new THREE.Mesh(
+                    new THREE.CylinderGeometry(partU(0.7), partU(0.7), partU(2.4), 8),
+                    holeMat
+                );
                 hole.rotation.x = Math.PI / 2;
                 hole.position.set(hx, 0.014, hz);
                 hornGroup.add(hole);
@@ -2641,42 +2432,45 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             g.add(hornGroup);
 
             const header = new THREE.Mesh(
-                new THREE.BoxGeometry(0.2, 0.07, 0.09),
+                new THREE.BoxGeometry(baseW * 0.22, partU(7), baseD * 0.22),
                 new THREE.MeshStandardMaterial({ color: "#f5f5f4", roughness: 0.75 })
             );
-            header.position.set(0, baseH * 0.42, -(baseD / 2 + 0.045));
+            header.position.set(0, baseH * 0.42, -(baseD / 2 + partU(4.5)));
             g.add(header);
 
-            addThroughHolePins(g, [-baseW * 0.2, 0, baseW * 0.2], 0.04);
+            addThroughHolePins(g, [-baseW * 0.2, 0, baseW * 0.2], PART_DIM.PIN_LEN / 2);
 
             return g;
         }
 
-        function addL298nTerminal(group, cx, cz, pinCount, yBase) {
+        function addL298nTerminal(group, cx, cz, pinCount, yBase, pcbW) {
             const blue = new THREE.MeshStandardMaterial({ color: "#1d4ed8", roughness: 0.42 });
             const metal = partMetalMat();
             const pitch = partU(3.5);
-            const w = pinCount * pitch + 0.038;
+            const w = pinCount * pitch + partU(4);
             const block = new THREE.Group();
             block.position.set(cx, yBase, cz);
 
-            const base = new THREE.Mesh(new THREE.BoxGeometry(w, 0.11, 0.13), blue);
+            const base = new THREE.Mesh(new THREE.BoxGeometry(w, partU(11), partU(13)), blue);
             block.add(base);
-            const chamfer = new THREE.Mesh(new THREE.BoxGeometry(w * 0.94, 0.028, 0.048), blue);
-            chamfer.position.set(0, 0.048, 0.042);
+            const chamfer = new THREE.Mesh(new THREE.BoxGeometry(w * 0.94, partU(2.8), partU(5.5)), blue);
+            chamfer.position.set(0, partU(4.8), partU(4.2));
             block.add(chamfer);
 
             for (let p = 0; p < pinCount; p++) {
-                const px = -w / 2 + 0.048 + p * pitch;
+                const px = -w / 2 + partU(4.5) + p * pitch;
                 const wireHole = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.011, 0.011, 0.028, 8),
+                    new THREE.CylinderGeometry(partU(0.9), partU(0.9), partU(2.8), 8),
                     new THREE.MeshBasicMaterial({ color: "#0f172a" })
                 );
                 wireHole.rotation.x = Math.PI / 2;
-                wireHole.position.set(px, 0, 0.066);
+                wireHole.position.set(px, 0, partU(6.6));
                 block.add(wireHole);
-                const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.018, 8), metal);
-                screw.position.set(px, 0.056, 0);
+                const screw = new THREE.Mesh(
+                    new THREE.CylinderGeometry(partU(0.75), partU(0.75), partU(1.8), 8),
+                    metal
+                );
+                screw.position.set(px, partU(5.6), 0);
                 block.add(screw);
             }
             group.add(block);
@@ -2687,27 +2481,29 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             g.position.set(x, 0.1, z);
 
             const pcbW = PART_DIM.L298N_W;
-            const pcbH = PART_DIM.L298N_H;
             const pcbD = PART_DIM.L298N_D;
+            const pcbT = PART_DIM.L298N_PCB_T;
+            const hsH = PART_DIM.L298N_HS_H;
             const metal = partMetalMat();
-            const yTop = pcbH;
+            const yTop = pcbT;
 
             const driverMat = new THREE.MeshStandardMaterial({ color: "#991b1b", roughness: 0.48, emissive: 0x000000, emissiveIntensity: 0 });
-            const pcb = new THREE.Mesh(new THREE.BoxGeometry(pcbW, pcbH, pcbD), driverMat);
+            const pcb = new THREE.Mesh(new THREE.BoxGeometry(pcbW, pcbT, pcbD), driverMat);
             pcb.name = 'driverBoard';
             pcb.position.y = yTop / 2;
             pcb.castShadow = true;
             g.add(pcb);
 
+            const mountR = partU(2.1);
             [[-1, -1], [-1, 1], [1, -1], [1, 1]].forEach(([sx, sz]) => {
-                const hx = sx * (pcbW / 2 - 0.042);
-                const hz = sz * (pcbD / 2 - 0.042);
-                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.021, 0.004, 8, 16), metal);
+                const hx = sx * (pcbW / 2 - partU(4.2));
+                const hz = sz * (pcbD / 2 - partU(4.2));
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(mountR, partU(0.4), 8, 16), metal);
                 ring.rotation.x = Math.PI / 2;
-                ring.position.set(hx, yTop + 0.002, hz);
+                ring.position.set(hx, yTop + partU(0.2), hz);
                 g.add(ring);
                 const hole = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.015, 0.015, yTop + 0.012, 8),
+                    new THREE.CylinderGeometry(partU(1.5), partU(1.5), pcbT + partU(1.2), 8),
                     new THREE.MeshBasicMaterial({ color: "#1e293b" })
                 );
                 hole.position.set(hx, yTop / 2, hz);
@@ -2715,80 +2511,111 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             });
 
             const hsMat = new THREE.MeshStandardMaterial({ color: "#1a1a1a", roughness: 0.62, metalness: 0.15 });
-            const hsZ = -pcbD / 2 + 0.12;
-            const hs = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.17, 0.13), hsMat);
-            hs.position.set(0, yTop + 0.085, hsZ);
+            const hsW = pcbW * 0.52;
+            const hsD = pcbD * 0.32;
+            const hsZ = -pcbD / 2 + hsD / 2 + partU(4);
+            const hs = new THREE.Mesh(new THREE.BoxGeometry(hsW, hsH, hsD), hsMat);
+            hs.position.set(0, yTop + hsH / 2, hsZ);
             hs.castShadow = true;
             g.add(hs);
 
             for (let i = 0; i < 8; i++) {
-                const finTop = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.022, 0.016), hsMat);
-                finTop.position.set(0, yTop + 0.19 + i * 0.007, hsZ - 0.01);
+                const finTop = new THREE.Mesh(
+                    new THREE.BoxGeometry(hsW * 0.95, partU(1.6), partU(1.8)),
+                    hsMat
+                );
+                finTop.position.set(0, yTop + hsH * 0.82 + i * partU(0.9), hsZ - hsD * 0.08);
                 g.add(finTop);
             }
             for (let i = 0; i < 6; i++) {
-                const finBack = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.15, 0.11), hsMat);
-                finBack.position.set(-0.15 + i * 0.06, yTop + 0.085, hsZ - 0.08);
+                const finBack = new THREE.Mesh(
+                    new THREE.BoxGeometry(partU(1.8), hsH * 0.88, hsD * 0.88),
+                    hsMat
+                );
+                finBack.position.set(-hsW / 2 + partU(2.5) + i * partU(6), yTop + hsH / 2, hsZ - hsD * 0.42);
                 g.add(finBack);
             }
 
             const icMat = new THREE.MeshStandardMaterial({ color: "#111827", roughness: 0.78 });
-            const ic = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.19, 0.032), icMat);
-            ic.position.set(0, yTop + 0.1, hsZ + 0.1);
+            const ic = new THREE.Mesh(
+                new THREE.BoxGeometry(partU(10), partU(18), partU(3.5)),
+                icMat
+            );
+            ic.position.set(0, yTop + partU(11), hsZ + hsD * 0.35);
             g.add(ic);
 
-            const tab = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.028, 0.018), metal);
-            tab.position.set(0, yTop + 0.21, hsZ + 0.1);
+            const tab = new THREE.Mesh(new THREE.BoxGeometry(partU(7.5), partU(2.8), partU(1.8)), metal);
+            tab.position.set(0, yTop + partU(21), hsZ + hsD * 0.35);
             g.add(tab);
             const tabHole = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.011, 0.011, 0.032, 8),
+                new THREE.CylinderGeometry(partU(1.1), partU(1.1), partU(3.2), 8),
                 new THREE.MeshBasicMaterial({ color: "#0f172a" })
             );
             tabHole.rotation.z = Math.PI / 2;
-            tabHole.position.set(0, yTop + 0.21, hsZ + 0.11);
+            tabHole.position.set(0, yTop + partU(21), hsZ + hsD * 0.38);
             g.add(tabHole);
 
             for (let i = 0; i < 15; i++) {
-                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.055, 4), metal);
-                leg.position.set(-0.04 + i * 0.0055, yTop + 0.022, hsZ + 0.1);
+                const leg = new THREE.Mesh(
+                    new THREE.CylinderGeometry(partU(0.3), partU(0.3), partU(5.5), 4),
+                    metal
+                );
+                leg.position.set(-partU(4) + i * partU(0.55), yTop + partU(2.2), hsZ + hsD * 0.35);
                 g.add(leg);
             }
 
-            const termY = yTop + 0.055;
-            addL298nTerminal(g, -0.3, pcbD / 2 - 0.055, 2, termY);
-            addL298nTerminal(g, 0.08, pcbD / 2 - 0.045, 3, termY);
-            addL298nTerminal(g, 0.34, -pcbD / 2 + 0.075, 2, termY);
+            const termY = yTop + partU(5.5);
+            addL298nTerminal(g, -pcbW * 0.28, pcbD / 2 - partU(5.5), 2, termY, pcbW);
+            addL298nTerminal(g, pcbW * 0.08, pcbD / 2 - partU(4.5), 3, termY, pcbW);
+            addL298nTerminal(g, pcbW * 0.34, -pcbD / 2 + partU(7.5), 2, termY, pcbW);
 
             const capMat = new THREE.MeshStandardMaterial({ color: "#c0c0c0", metalness: 0.72, roughness: 0.22 });
             [[-0.13, 0.04], [0.13, 0.04]].forEach(([cx, cz]) => {
-                const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.044, 0.13, 14), capMat);
-                cap.position.set(cx, yTop + 0.072, cz);
+                const cap = new THREE.Mesh(
+                    new THREE.CylinderGeometry(partU(4.4), partU(4.4), partU(13), 14),
+                    capMat
+                );
+                cap.position.set(cx * pcbW, yTop + partU(7.2), cz * pcbD);
                 g.add(cap);
             });
 
             const dioMat = new THREE.MeshStandardMaterial({ color: "#0f172a", roughness: 0.85 });
             for (let i = 0; i < 4; i++) {
-                const dLeft = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.011, 0.018), dioMat);
-                dLeft.position.set(-pcbW / 2 + 0.075, yTop + 0.007, -0.18 + i * 0.048);
+                const dLeft = new THREE.Mesh(
+                    new THREE.BoxGeometry(partU(3.4), partU(1.1), partU(1.8)),
+                    dioMat
+                );
+                dLeft.position.set(-pcbW / 2 + partU(7.5), yTop + partU(0.7), -pcbD * 0.22 + i * partU(4.8));
                 g.add(dLeft);
-                const dBack = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.011, 0.018), dioMat);
-                dBack.position.set(0.24, yTop + 0.007, -pcbD / 2 + 0.13 + i * 0.042);
+                const dBack = new THREE.Mesh(
+                    new THREE.BoxGeometry(partU(3.4), partU(1.1), partU(1.8)),
+                    dioMat
+                );
+                dBack.position.set(pcbW * 0.24, yTop + partU(0.7), -pcbD / 2 + partU(13) + i * partU(4.2));
                 g.add(dBack);
             }
 
             for (let i = 0; i < 8; i++) {
-                const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.0075, 0.0075, 0.095, 6), metal);
-                pin.position.set(pcbW / 2 - 0.055, yTop + 0.052, -0.19 + i * 0.052);
+                const pin = new THREE.Mesh(
+                    new THREE.CylinderGeometry(partU(0.75), partU(0.75), partU(9.5), 6),
+                    metal
+                );
+                pin.position.set(pcbW / 2 - partU(5.5), yTop + partU(5.2), -pcbD * 0.22 + i * partU(5.2));
                 g.add(pin);
             }
 
-            const reg = new THREE.Mesh(new THREE.BoxGeometry(0.052, 0.016, 0.052), dioMat);
-            reg.position.set(0.22, yTop + 0.01, 0.06);
+            const reg = new THREE.Mesh(
+                new THREE.BoxGeometry(partU(5.2), partU(1.6), partU(5.2)),
+                dioMat
+            );
+            reg.position.set(pcbW * 0.22, yTop + partU(1), pcbD * 0.06);
             g.add(reg);
 
-            [[-0.04, 0.14], [0.1, -0.1], [-0.18, 0.02]].forEach(([cx, cz]) => addSmdPad(g, cx, yTop + 0.004, cz, 0.038, 0.024));
+            [[-0.04, 0.14], [0.1, -0.1], [-0.18, 0.02]].forEach(([cx, cz]) =>
+                addSmdPad(g, cx * pcbW, yTop + partU(0.4), cz * pcbD)
+            );
 
-            addThroughHolePins(g, [-pcbW * 0.42, -pcbD * 0.28, 0, pcbD * 0.28, pcbW * 0.42], 0.05);
+            addThroughHolePins(g, [-pcbW * 0.42, -pcbD * 0.28, 0, pcbD * 0.28, pcbW * 0.42], PART_DIM.PIN_LEN / 2);
 
             return g;
         }
@@ -2825,15 +2652,16 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             g.add(endCap);
 
             const shaft = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.034, 0.034, ml * 0.42, 12),
+                new THREE.CylinderGeometry(mr * 0.28, mr * 0.28, ml * 0.42, 12),
                 new THREE.MeshStandardMaterial({ color: "#e2e8f0", metalness: 0.92, roughness: 0.08 })
             );
             shaft.name = 'motorShaft';
             shaft.rotation.z = Math.PI / 2;
-            shaft.position.set(ml / 2 + 0.04, cy, 0);
-            [[0.1, 0], [0, 0.1], [-0.1, 0], [0, -0.1]].forEach(([py, pz]) => {
+            shaft.position.set(ml / 2 + partU(4), cy, 0);
+            const bladeLen = mr * 0.42;
+            [[bladeLen, 0], [0, bladeLen], [-bladeLen, 0], [0, -bladeLen]].forEach(([py, pz]) => {
                 const blade = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.12, 0.015, 0.015),
+                    new THREE.BoxGeometry(ml * 0.22, partU(1.5), partU(1.5)),
                     new THREE.MeshBasicMaterial({ color: "#ffffff" })
                 );
                 blade.position.set(0, py, pz);
@@ -2867,70 +2695,54 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
 
             const rw = PART_DIM.RELAY_W;
             const rd = PART_DIM.RELAY_D;
-            const pcb = new THREE.Mesh(new THREE.BoxGeometry(rw, 0.05, rd), partPcbMat("#1e3a5f"));
-            pcb.position.y = 0.12;
+            const pcbT = partU(1.6);
+            const pcb = new THREE.Mesh(new THREE.BoxGeometry(rw, pcbT, rd), partPcbMat("#1e3a5f"));
+            pcb.position.y = PART_DIM.PIN_LEN / 2 + pcbT / 2;
             pcb.castShadow = true;
             g.add(pcb);
 
             const relayMat = new THREE.MeshStandardMaterial({ color: "#1d4ed8", roughness: 0.4 });
             const coil = new THREE.Mesh(new THREE.BoxGeometry(rw * 0.62, rw * 0.62, rd * 0.58), relayMat);
-            coil.position.set(-0.03, 0.28, 0);
+            coil.position.set(-rw * 0.04, pcb.position.y + rw * 0.28, 0);
             coil.castShadow = true;
             g.add(coil);
 
             const cover = new THREE.Mesh(
-                new THREE.BoxGeometry(0.3, 0.04, 0.44),
+                new THREE.BoxGeometry(rw * 0.36, partU(4), rd * 0.55),
                 new THREE.MeshStandardMaterial({ color: "#3b82f6", roughness: 0.35, transparent: true, opacity: 0.75 })
             );
-            cover.position.set(-0.04, 0.52, 0);
+            cover.position.set(-rw * 0.04, pcb.position.y + rw * 0.42, 0);
             g.add(cover);
 
             const ledSocket = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.035, 0.035, 0.02, 12),
+                new THREE.CylinderGeometry(partU(3.5), partU(3.5), partU(2), 12),
                 new THREE.MeshStandardMaterial({ color: "#1e293b", roughness: 0.8 })
             );
             ledSocket.rotation.x = Math.PI / 2;
-            ledSocket.position.set(0.2, 0.2, 0.32);
+            ledSocket.position.set(rw * 0.22, pcb.position.y + partU(3), rd * 0.32);
             g.add(ledSocket);
 
             const led = new THREE.Mesh(
-                new THREE.SphereGeometry(0.028, 10, 10),
+                new THREE.SphereGeometry(partU(2.8), 10, 10),
                 new THREE.MeshStandardMaterial({ color: "#7f1d1d", emissive: 0x000000, emissiveIntensity: 0 })
             );
             led.name = 'relayLed';
-            led.position.set(0.2, 0.22, 0.34);
+            led.position.set(rw * 0.22, pcb.position.y + partU(3.5), rd * 0.34);
             g.add(led);
 
             const termMat = new THREE.MeshStandardMaterial({ color: "#94a3b8", metalness: 0.75, roughness: 0.3 });
             [-0.22, 0.22].forEach(px => {
-                const term = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.08), termMat);
-                term.position.set(px, 0.18, -0.38);
+                const term = new THREE.Mesh(
+                    new THREE.BoxGeometry(partU(10), partU(10), partU(8)),
+                    termMat
+                );
+                term.position.set(px * rw, pcb.position.y + partU(2), -rd * 0.38);
                 g.add(term);
             });
 
-            addThroughHolePins(g, [-rw * 0.32, 0, rw * 0.32], 0.02);
+            addThroughHolePins(g, [-rw * 0.32, 0, rw * 0.32], PART_DIM.PIN_LEN / 2);
 
             return g;
-        }
-
-        function rebuildWiresIn3D(wiresData) {
-            activeWireMeshes.forEach(wire => scene.remove(wire));
-            activeWireMeshes = [];
-
-            wiresData.forEach(wire => {
-                const vectorList = wire.path.map(p => new THREE.Vector3(p[0], p[1], p[2]));
-                const path = new THREE.CatmullRomCurve3(vectorList);
-                const geom = new THREE.TubeGeometry(path, 32, 0.06, 8, false);
-                const mat = new THREE.MeshStandardMaterial({
-                    color: wire.color,
-                    roughness: 0.6,
-                    metalness: 0.1
-                });
-                const tube = new THREE.Mesh(geom, mat);
-                tube.name = wire.type;
-                scene.add(tube);
-                activeWireMeshes.push(tube);
-            });
         }
 
 
@@ -2938,42 +2750,26 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
         // SIMULATION EXECUTION RUNTIME LOOP
         // ========================================================
         function toggleSimulation() {
-            const finalIndex = PRESETS[activePreset].steps.length - 1;
-            if(activeStep < finalIndex) {
-                activeStep = finalIndex;
-                renderCurrentStep();
-                updateComponentVisibilities();
-            }
-
             const btn = document.getElementById("btn-simulation");
-            if(isSimulating) {
+            if (isSimulating) {
                 isSimulating = false;
                 btn.innerHTML = `<i class="fa-solid fa-play"></i> Run Sandbox`;
                 btn.className = "flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-300 px-4 py-3.5 rounded-2xl font-semibold text-sm shadow-xl shadow-emerald-900/10 cursor-pointer";
 
                 clearInterval(simInterval);
                 stopOscilloscope();
-                resetAllComponentOutputs();
                 stopBuzzerTone();
                 resetFreeBuildState();
                 syncFreeBuildControlUI();
                 resetPlacedSensorVisuals();
-                if (isFreeBuildMode) {
-                    hideFreeBuildControlWrappers();
-                    document.getElementById("interactive-hardware-control")?.classList.add('hidden');
-                } else {
-                    buildInteractiveControls();
-                }
+                hideFreeBuildControlWrappers();
+                document.getElementById("interactive-hardware-control")?.classList.add('hidden');
             } else {
                 isSimulating = true;
                 btn.innerHTML = `<i class="fa-solid fa-pause"></i> Halt Sandbox`;
                 btn.className = "flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white transition-all duration-300 px-4 py-3.5 rounded-2xl font-semibold text-sm shadow-xl shadow-amber-900/10 cursor-pointer";
 
-                if (isFreeBuildMode) {
-                    buildFreeBuildInteractiveControls();
-                } else {
-                    buildInteractiveControls();
-                }
+                buildFreeBuildInteractiveControls();
                 updatePlacedSensorVisuals();
                 runSimulationInterval();
                 startOscilloscope();
@@ -2981,113 +2777,27 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
         }
 
         function runSimulationInterval() {
-            let blinkHigh = false;
-            let alarmHigh = false;
-            let simTick = 0;
-
             simInterval = setInterval(() => {
                 if (!isSimulating) return;
-                simTick++;
-
-                if (isFreeBuildMode) {
-                    const types = new Set(placedComponents.map(g => g.userData.type));
-                    if (types.has('dht11')) appendSerial(`DHT11 → Temp: ${freeBuildState.activeTempC}°C  Humidity: ${freeBuildState.activeHumidity}%`);
-                    if (types.has('hcsr04')) appendSerial(`HC-SR04 → Distance: ${freeBuildState.activeDistanceCm} cm`);
-                    if (types.has('pir')) appendSerial(`PIR → ${freeBuildState.activePirMotion ? 'MOTION detected' : 'No motion'}`);
-                    if (types.has('servo')) appendSerial(`Servo → Angle: ${freeBuildState.activeServoAngle}°`);
-                    if (types.has('dc_motor')) {
-                        const dir = freeBuildState.activeMotorSpeed >= 0 ? 'FWD' : 'REV';
-                        appendSerial(`DC Motor → ${dir} ${Math.abs(freeBuildState.activeMotorSpeed)}%`);
-                    }
-                    if (types.has('l298n') && freeBuildState.activeMotorSpeed !== 0) {
-                        const dir = freeBuildState.activeMotorSpeed >= 0 ? 'FWD' : 'REV';
-                        appendSerial(`L298N → H-bridge ${dir} (${Math.abs(freeBuildState.activeMotorSpeed)}%)`);
-                    }
-                    if (types.has('relay')) appendSerial(`Relay → ${freeBuildState.activeRelayOn ? 'ON (energized)' : 'OFF'}`);
-                    if (!FREE_BUILD_INTERACTIVE_TYPES.some(t => types.has(t))) {
-                        appendSerial('Free build: place a sensor or actuator to see activity');
-                    }
-                    updatePlacedSensorVisuals();
-                    return;
+                const types = new Set(placedComponents.map(g => g.userData.type));
+                if (types.has('dht11')) appendSerial(`DHT11 → Temp: ${freeBuildState.activeTempC}°C  Humidity: ${freeBuildState.activeHumidity}%`);
+                if (types.has('hcsr04')) appendSerial(`HC-SR04 → Distance: ${freeBuildState.activeDistanceCm} cm`);
+                if (types.has('pir')) appendSerial(`PIR → ${freeBuildState.activePirMotion ? 'MOTION detected' : 'No motion'}`);
+                if (types.has('servo')) appendSerial(`Servo → Angle: ${freeBuildState.activeServoAngle}°`);
+                if (types.has('dc_motor')) {
+                    const dir = freeBuildState.activeMotorSpeed >= 0 ? 'FWD' : 'REV';
+                    appendSerial(`DC Motor → ${dir} ${Math.abs(freeBuildState.activeMotorSpeed)}%`);
                 }
-
-                if (activePreset === "blink") {
-                    // Arduino: digitalWrite(LED_PIN, HIGH/LOW) every 1 second → 500ms per half-cycle
-                    blinkHigh = !blinkHigh;
-                    setLEDOutput(blinkHigh);
-                    appendSerial(`digitalWrite(LED_PIN, ${blinkHigh ? 'HIGH' : 'LOW'})`);
-
-                } else if (activePreset === "night") {
-                    // Arduino: analogRead(LDR_PIN) returns 0-1023; LED ON when value < THRESHOLD(400)
-                    // slider 0% = dark = low ADC; 100% = bright = high ADC
-                    const analogVal = Math.round(activeLdrLevel * 10.23);
-                    const ledOn = analogVal < 400;
-                    setLEDOutput(ledOn);
-                    appendSerial(`lightLevel = ${analogVal} | LED ${ledOn ? 'ON (dark)' : 'OFF (bright)'}`);
-
-                } else if (activePreset === "button") {
-                    // Arduino: digitalRead(BUTTON_PIN) with INPUT_PULLUP — LOW when pressed
-                    const pinState = activeButtonState ? 'LOW' : 'HIGH';
-                    setLEDOutput(activeButtonState);
-                    appendSerial(`digitalRead(BUTTON) = ${pinState} → LED ${activeButtonState ? 'ON' : 'OFF'}`);
-
-                } else if (activePreset === "alarm") {
-                    // Arduino: alternates tone(BUZZER_PIN, 880) and tone(BUZZER_PIN, 440) every 250ms
-                    alarmHigh = !alarmHigh;
-                    const freq = alarmHigh ? 880 : 440;
-                    setBuzzerOutput(true, freq);
-                    appendSerial(`tone(BUZZER_PIN, ${freq}) // ${alarmHigh ? 'alert pitch' : 'low pitch'}`);
-
-                } else {
-                    appendSerial(`[tick ${simTick}] Simulation running`);
+                if (types.has('l298n') && freeBuildState.activeMotorSpeed !== 0) {
+                    const dir = freeBuildState.activeMotorSpeed >= 0 ? 'FWD' : 'REV';
+                    appendSerial(`L298N → H-bridge ${dir} (${Math.abs(freeBuildState.activeMotorSpeed)}%)`);
                 }
+                if (types.has('relay')) appendSerial(`Relay → ${freeBuildState.activeRelayOn ? 'ON (energized)' : 'OFF'}`);
+                if (!FREE_BUILD_INTERACTIVE_TYPES.some(t => types.has(t))) {
+                    appendSerial('Free build: place a sensor or actuator to see activity');
+                }
+                updatePlacedSensorVisuals();
             }, 500);
-        }
-
-        function setLEDOutput(state) {
-            const led = customMeshes["led"];
-            if (!led) return;
-
-            const emissiveMap = { red: 0xef4444, green: 0x22c55e, blue: 0x3b82f6 };
-            const hex = state ? (emissiveMap[led.userData.variant] || emissiveMap.red) : 0x000000;
-            led.traverse(ch => {
-                if ((ch.name === "ledDome" || ch.name === "ledTip") && ch.material) {
-                    ch.material.emissive.setHex(hex);
-                }
-            });
-            const light = led.getObjectByName("ledGlow");
-            if (light) light.intensity = state ? 1.8 : 0;
-        }
-
-        function setBuzzerOutput(state, freq) {
-            const buzzer = customMeshes["buzzer"];
-            if (!buzzer) return;
-            if (state) {
-                buzzer.position.y = 0.17; // base 0.12 + 0.05 vibration offset
-                startBuzzerTone(freq || 880);
-                buzzer.traverse(ch => {
-                    if (ch.name === "buzzerBody" && ch.material) {
-                        ch.material.emissive.setHex(0x7c3aed);
-                        ch.material.emissiveIntensity = 0.3;
-                    }
-                });
-            } else {
-                buzzer.position.y = 0.12; // restore base position
-                stopBuzzerTone();
-                buzzer.traverse(ch => {
-                    if (ch.name === "buzzerBody" && ch.material) {
-                        ch.material.emissive.setHex(0x000000);
-                        ch.material.emissiveIntensity = 0;
-                    }
-                });
-            }
-        }
-
-        function resetAllComponentOutputs() {
-            setLEDOutput(false);
-            setBuzzerOutput(false);
-            renderer.setClearColor(new THREE.Color("#e8edf2"), 1.0);
-            resetPlacedSensorVisuals();
         }
 
         function resetSonarEyes(mesh) {
@@ -3254,25 +2964,6 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
         function handleRelayToggle(isOn) {
             freeBuildState.activeRelayOn = isOn;
             updatePlacedSensorVisuals();
-        }
-
-        function handleHardwareSlider(val) {
-            activeLdrLevel = parseInt(val);
-            document.getElementById("slider-val").textContent = `${activeLdrLevel}%`;
-
-            const ldr = customMeshes["ldr"];
-            if(ldr) {
-                ldr.rotation.y = (activeLdrLevel / 100) * Math.PI;
-            }
-        }
-
-        function handleHardwareButton(isPressed) {
-            activeButtonState = isPressed;
-            const cap = customMeshes["button"]?.getObjectByName("buttonCap");
-            if (cap) {
-                const rest = cap.userData.restY ?? cap.position.y;
-                cap.position.y = isPressed ? rest - partU(0.9) : rest;
-            }
         }
 
         function renderLoop() {
@@ -3606,8 +3297,6 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
 
             if (tabName === 'parts') {
                 enterFreeBuildMode();
-            } else if (tabName !== 'serial' && tabName !== 'scope') {
-                enterPresetMode();
             }
 
             // If switching to Scope while simulation is running, hook up the oscilloscope
@@ -3616,38 +3305,16 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             }
         }
 
-        /** Activate free-build sandbox: hide preset components, show placed ones */
+        /** Activate free-build sandbox */
         function enterFreeBuildMode() {
             isFreeBuildMode = true;
-            Object.values(customMeshes).forEach(m => { if (m) m.visible = false; });
-            activeWireMeshes.forEach(w => { w.visible = false; });
             placedComponents.forEach(g => { g.visible = true; });
             if (isWireMode) setPinSpheresVisible(true);
             if (isSimulating) toggleSimulation();
             hideFreeBuildControlWrappers();
             document.getElementById("interactive-hardware-control")?.classList.add('hidden');
             glideCamera({ x: 0, y: 15, z: 8 }, { x: 0, y: 0, z: 0 });
-            // Baseline snapshot so first undo returns to empty canvas
             if (undoStack.length === 0) saveUndoSnapshot();
-        }
-
-        /** Return to guided preset mode: hide free-placed, restore preset visibility */
-        function enterPresetMode() {
-            isFreeBuildMode = false;
-            if (isWireMode) {
-                isWireMode = false;
-                document.getElementById('wire-tool-btn')?.classList.remove('active');
-                cancelWireDraw();
-                clearPinHighlight();
-                document.getElementById('wire-mode-indicator')?.classList.remove('visible');
-                controls.enabled = true;
-            }
-            setPinSpheresVisible(false);
-            placedComponents.forEach(g => { g.visible = false; });
-            deselectComponent();
-            hideFreeBuildControlWrappers();
-            if (!isSimulating) buildInteractiveControls();
-            updateComponentVisibilities();
         }
 
         /** Build part card UI — called once on load */
@@ -3983,16 +3650,24 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             }
         }
 
+        function setCommunityLibraryOpen(open) {
+            const modal = document.getElementById('community-library-modal');
+            if (!modal) return;
+            modal.classList.toggle('open', open);
+            document.body.classList.toggle('community-library-open', open);
+            window.dispatchEvent(new CustomEvent('pilot:community-library', { detail: { open } }));
+        }
+
         // Open community library modal
         function openCommunityLibrary() {
             initCommunityLibrary();
-            document.getElementById('community-library-modal').classList.add('open');
+            setCommunityLibraryOpen(true);
             switchCommunityTab('browse');
         }
 
         // Close community library modal
         function closeCommunityLibrary() {
-            document.getElementById('community-library-modal').classList.remove('open');
+            setCommunityLibraryOpen(false);
         }
 
         // Switch between tabs
@@ -4387,25 +4062,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
 
         function getOscVoltage() {
             if (!isSimulating) return null;
-            switch (activePreset) {
-                case 'blink': {
-                    const led = customMeshes["led"];
-                    const glow = led && led.getObjectByName("ledGlow");
-                    const on = glow && glow.intensity > 0;
-                    return on ? 5 : 0;
-                }
-                case 'night':
-                    return (activeLdrLevel / 100) * 5;
-                case 'button':
-                    return activeButtonState ? 5 : 0;
-                case 'alarm': {
-                    const bz = customMeshes["buzzer"];
-                    const on = bz && Math.abs(bz.position.y) > 0.01;
-                    return on ? 5 : 0;
-                }
-                default:
-                    return 2.5 + Math.sin(Date.now() * 0.002) * 0.3;
-            }
+            return 2.5 + Math.sin(Date.now() * 0.002) * 0.3;
         }
 
         function oscSampleTick() {
@@ -4515,9 +4172,8 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
 
             // Live readout
             const last = samples[samples.length - 1];
-            const sigNames = { blink: 'D13 (LED)', night: 'A0 (LDR)', button: 'D2 (Button)', alarm: 'D8 (Buzzer)' };
             const slEl = document.getElementById('osc-signal-label');
-            if (slEl) slEl.textContent = `${sigNames[activePreset] || 'Signal'}  ${last.v.toFixed(2)} V`;
+            if (slEl) slEl.textContent = `Signal  ${last.v.toFixed(2)} V`;
 
             let crossings = 0;
             for (let i = 1; i < samples.length; i++) {
@@ -4556,9 +4212,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
         function saveProject() {
             const codeEl = document.getElementById('code-content');
             const data = {
-                version: '1.0',
-                preset: activePreset,
-                step: activeStep,
+                version: '2.0',
                 customCode: codeEl ? codeEl.value : '',
                 placedComponents: placedComponents.map(g => ({
                     type: g.userData.type,
@@ -4572,7 +4226,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `circuit-${data.preset}.json`;
+            a.download = 'circuit.json';
             a.click();
             URL.revokeObjectURL(url);
             showToast("Project saved!", false);
@@ -4585,14 +4239,6 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             reader.onload = (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (!data.preset || !PRESETS[data.preset]) {
-                        showToast("Invalid project file.", false); return;
-                    }
-                    applyPreset(data.preset);
-                    if (typeof data.step === 'number') {
-                        activeStep = data.step;
-                        renderCurrentStep();
-                    }
                     if (data.customCode) {
                         const codeEl = document.getElementById('code-content');
                         if (codeEl) codeEl.value = data.customCode;
@@ -4617,9 +4263,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
         function shareCircuitLink() {
             const codeEl = document.getElementById('code-content');
             const state = {
-                version: '1.0',
-                preset: activePreset,
-                step: activeStep,
+                version: '2.0',
                 customCode: codeEl ? codeEl.value : '',
                 placedComponents: placedComponents.map(g => ({
                     type: g.userData.type,
@@ -4650,29 +4294,16 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
         // EXPORT AS PDF
         // ========================================================
         function exportAsPDF() {
-            const data = PRESETS[activePreset];
-            if (!data) { showToast("No circuit loaded.", false); return; }
-
             const codeEl = document.getElementById('code-content');
-            const code = (codeEl ? codeEl.value : data.code) || data.code || '';
+            const code = codeEl ? codeEl.value : '';
 
-            // Build step HTML
-            const stepsHTML = data.steps.map((step, i) => `
-                <div class="step">
-                    <div class="step-header">
-                        <span class="step-num">${i + 1}</span>
-                        <span class="step-title">${escapeHtml(step.title)}</span>
-                    </div>
-                    <p class="step-desc">${escapeHtml(step.desc)}</p>
-                    ${step.tip ? `<div class="tip"><span class="tip-label">💡 Tip:</span> ${escapeHtml(step.tip)}</div>` : ''}
-                </div>`).join('');
+            const compList = placedComponents.length > 0
+                ? placedComponents.map((g, i) => `<li>${i + 1}. ${escapeHtml(g.userData.label || g.userData.type)}</li>`).join('')
+                : '<li>No components placed.</li>';
 
-            // Build schematic SVG
-            const schematicSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" style="width:100%;max-height:240px;">${data.schematic || ''}</svg>`;
+            // no schematic in free-build mode
 
-            // Escape code for HTML
             const codeHTML = escapeHtml(code);
-
             const now = new Date();
             const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -4680,165 +4311,44 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>${escapeHtml(data.title)} — IoTify AI Lab</title>
+<title>IoTify AI Lab — Circuit Export</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    color: #0f172a;
-    background: #fff;
-    padding: 40px 48px;
-    font-size: 13px;
-    line-height: 1.6;
-  }
-  /* Header */
-  .doc-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding-bottom: 18px;
-    border-bottom: 2px solid #e2e8f0;
-    margin-bottom: 28px;
-  }
-  .doc-logo {
-    font-size: 11px;
-    font-weight: 700;
-    color: #6366f1;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; color: #0f172a; background: #fff; padding: 40px 48px; font-size: 13px; line-height: 1.6; }
+  .doc-header { display: flex; align-items: flex-start; justify-content: space-between; padding-bottom: 18px; border-bottom: 2px solid #e2e8f0; margin-bottom: 28px; }
+  .doc-logo { font-size: 11px; font-weight: 700; color: #6366f1; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
   .doc-title { font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
   .doc-meta { font-size: 11px; color: #64748b; }
-  .doc-badge {
-    background: #eef2ff;
-    color: #4338ca;
-    border-radius: 20px;
-    padding: 4px 12px;
-    font-size: 11px;
-    font-weight: 600;
-    white-space: nowrap;
-    margin-top: 4px;
-  }
-  /* Two-column layout */
-  .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-bottom: 28px; }
-  /* Section labels */
-  .section-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #6366f1;
-    margin-bottom: 10px;
-  }
-  /* Schematic */
-  .schematic-box {
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 16px;
-    background: #f8fafc;
-  }
-  /* Steps */
-  .step {
-    padding: 12px 14px;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    background: #fff;
-    page-break-inside: avoid;
-  }
-  .step-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 6px;
-  }
-  .step-num {
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    background: #6366f1;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .step-title { font-size: 12px; font-weight: 600; color: #1e293b; }
-  .step-desc { font-size: 12px; color: #475569; margin-bottom: 6px; }
-  .tip {
-    background: #fffbeb;
-    border: 1px solid #fde68a;
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 11px;
-    color: #92400e;
-  }
-  .tip-label { font-weight: 600; }
-  /* Code block */
+  .doc-badge { background: #eef2ff; color: #4338ca; border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 600; white-space: nowrap; margin-top: 4px; }
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #6366f1; margin-bottom: 10px; }
+  .comp-list { list-style: none; padding: 0; margin-bottom: 24px; }
+  .comp-list li { padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 6px; font-size: 12px; color: #334155; }
   .code-section { margin-bottom: 24px; page-break-inside: avoid; }
-  pre {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    line-height: 1.7;
-    background: #0f172a;
-    color: #a5f3fc;
-    padding: 20px;
-    border-radius: 12px;
-    white-space: pre;
-    overflow: hidden;
-  }
-  /* Footer */
-  .doc-footer {
-    border-top: 1px solid #e2e8f0;
-    padding-top: 14px;
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    color: #94a3b8;
-    margin-top: 8px;
-  }
-  @media print {
-    body { padding: 24px 32px; }
-    .step { page-break-inside: avoid; }
-    .code-section { page-break-inside: avoid; }
-  }
+  pre { font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.7; background: #0f172a; color: #a5f3fc; padding: 20px; border-radius: 12px; white-space: pre; overflow: hidden; }
+  .doc-footer { border-top: 1px solid #e2e8f0; padding-top: 14px; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; margin-top: 8px; }
+  @media print { body { padding: 24px 32px; } .code-section { page-break-inside: avoid; } }
 </style>
 </head>
 <body>
-
 <div class="doc-header">
   <div>
     <div class="doc-logo">IoTify AI Lab</div>
-    <div class="doc-title">${escapeHtml(data.title)}</div>
-    <div class="doc-meta">Topic: ${escapeHtml(data.topic || 'General Education')} &nbsp;·&nbsp; ${data.steps.length} Steps &nbsp;·&nbsp; Generated ${dateStr}</div>
+    <div class="doc-title">Circuit Export</div>
+    <div class="doc-meta">${placedComponents.length} component(s) &nbsp;·&nbsp; Generated ${dateStr}</div>
   </div>
   <div class="doc-badge">Arduino C++</div>
 </div>
-
-<div class="layout">
-  <div>
-    <div class="section-label">Circuit Schematic</div>
-    <div class="schematic-box">${schematicSVG}</div>
-  </div>
-  <div>
-    <div class="section-label">Step-by-Step Instructions</div>
-    ${stepsHTML}
-  </div>
-</div>
-
+<div class="section-label">Components</div>
+<ul class="comp-list">${compList}</ul>
 <div class="code-section">
   <div class="section-label">Arduino Firmware</div>
   <pre>${codeHTML}</pre>
 </div>
-
 <div class="doc-footer">
   <span>IoTify AI Lab — Generative 3D IoT Sandbox</span>
-  <span>${escapeHtml(data.title)} · iotify.app</span>
+  <span>iotify.app</span>
 </div>
-
 <script>window.onload = () => { window.print(); }<\/script>
 </body>
 </html>`;
@@ -5059,39 +4569,7 @@ export function initIotifyApp() {
     initGraphics();
     buildPartsLibraryUI();
     initTour();
-
-    // Restore shared circuit from URL param
-    const params = new URLSearchParams(location.search);
-    const encoded = params.get('c');
-    if (encoded) {
-        try {
-            const state = JSON.parse(decodeURIComponent(escape(atob(encoded))));
-            if (state.preset && PRESETS[state.preset]) {
-                applyPreset(state.preset);
-                if (typeof state.step === 'number') {
-                    activeStep = state.step;
-                    renderCurrentStep();
-                }
-                if (state.customCode) {
-                    const codeEl = document.getElementById('code-content');
-                    if (codeEl) codeEl.value = state.customCode;
-                }
-                if (Array.isArray(state.placedComponents)) {
-                    state.placedComponents.forEach(c => {
-                        createComponent(c.type, c.variant, c.x, c.z);
-                    });
-                }
-                showToast("Circuit loaded from shared link! 🎉", false);
-            } else {
-                applyPreset("blink");
-                showToast("Shared link has an unknown preset — loaded default.", false);
-            }
-        } catch (e) {
-            applyPreset("blink");
-        }
-    } else {
-        applyPreset("blink");
-    }
+    enterFreeBuildMode();
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -5101,8 +4579,8 @@ export function initIotifyApp() {
 export {
     // panel layout
     toggleLeftPanel, toggleRightPanel, startResize, resetPanelWidth,
-    // presets / steps
-    applyPreset, moveStep,
+    // steps (AI free-build)
+    moveStep,
     // sim / scene / tools
     toggleSimulation, toggleSchematicPanel, resetCamera, toggleMuteAudio,
     toggleWireMode, glideCamera,
@@ -5115,7 +4593,7 @@ export {
     // parts library
     filterParts,
     // free-build interactive controls
-    handleHardwareSlider, handleHardwareButton, handleDhtTemp, handleDhtHumidity,
+    handleDhtTemp, handleDhtHumidity,
     handleDistanceSlider, handlePirMotion, handleServoAngle, handleMotorSpeed,
     handleRelayToggle,
     // serial / oscilloscope

@@ -1,4 +1,5 @@
-import { toggleLeftPanel, openCommunityLibrary } from '../lib/iotify-app.js';
+import { useEffect, useState } from 'react';
+import { openCommunityLibrary } from '../lib/iotify-app.js';
 
 function NavItem({ icon, label, active = false, onClick }) {
   return (
@@ -25,6 +26,14 @@ function SectionLabel({ children }) {
 }
 
 export default function LeftPanel() {
+  const [communityOpen, setCommunityOpen] = useState(false);
+
+  useEffect(() => {
+    const onToggle = (e) => setCommunityOpen(Boolean(e.detail?.open));
+    window.addEventListener('pilot:community-library', onToggle);
+    return () => window.removeEventListener('pilot:community-library', onToggle);
+  }, []);
+
   return (
     <aside
       id="left-panel"
@@ -36,14 +45,19 @@ export default function LeftPanel() {
         <SectionLabel>Main</SectionLabel>
         <NavItem icon="fa-solid fa-table-cells-large" label="Dashboard" />
         <NavItem icon="fa-solid fa-folder-open" label="Projects" />
-        <NavItem icon="fa-solid fa-flask" label="Virtual Lab" active />
+        <NavItem icon="fa-solid fa-flask" label="Virtual Lab" active={!communityOpen} />
 
         <SectionLabel>Learning</SectionLabel>
         <NavItem icon="fa-solid fa-wand-magic-sparkles" label="AI Tutor" />
         <NavItem icon="fa-solid fa-book-open" label="Learn" />
 
         <SectionLabel>Community</SectionLabel>
-        <NavItem icon="fa-solid fa-users" label="Community" onClick={openCommunityLibrary} />
+        <NavItem
+          icon="fa-solid fa-users"
+          label="Community"
+          active={communityOpen}
+          onClick={openCommunityLibrary}
+        />
         <NavItem icon="fa-solid fa-trophy" label="Achievements" />
       </nav>
 
