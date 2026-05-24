@@ -224,8 +224,8 @@
                     }
                 ],
                 wires: [
-                    { type: "wire_gnd", color: "#020617", path: [[-0.7, 0.3, -0.8], [-1, 1.8, -0.2], [1.2, 1.2, -1.2], [4.0, 0.25, -2.5]] },
-                    { type: "wire_sig", color: "#ef4444", path: [[-0.7, 0.3, 1.2], [-0.8, 2.2, 1.5], [2.5, 1.5, -0.3], [3.2, 0.25, -0.75]] }
+                    { type: "wire_gnd", color: "#020617", path: [[-0.7, 0.35, -2.0], [0.8, 1.3, -2.1], [2.7, 1.1, -2.4], [4.1, 0.13, -2.5]] },
+                    { type: "wire_sig", color: "#ef4444", path: [[-0.7, 0.35, -1.6], [0.5, 1.2, -1.4], [1.8, 1.1, -1.0], [2.4, 0.24, -0.8]] }
                 ],
                 activeComponent: "led",
                 interactiveType: "none",
@@ -293,8 +293,8 @@ void loop() {
                     }
                 ],
                 wires: [
-                    { type: "wire_gnd", color: "#020617", path: [[-0.7, 0.3, -0.8], [-1, 1.8, -0.2], [1.2, 1.2, -1.2], [4.0, 0.25, -2.5]] },
-                    { type: "wire_sig", color: "#fbbf24", path: [[-0.7, 0.3, -1.4], [0, 2, -1.5], [2.2, 1, 0.5], [3.2, 0.25, 0.2]] }
+                    { type: "wire_gnd", color: "#020617", path: [[-0.7, 0.35, -2.0], [0.8, 1.3, -2.1], [2.7, 1.1, -2.4], [4.1, 0.13, -2.5]] },
+                    { type: "wire_sig", color: "#fbbf24", path: [[-4.3, 0.35, 0.4], [-3.8, 1.2, 0.0], [-2.5, 1.8, -0.8], [-0.5, 1.6, -1.5], [2.42, 0.22, -1.8]] }
                 ],
                 activeComponent: "ldr",
                 interactiveType: "slider",
@@ -355,8 +355,8 @@ void loop() {
                     }
                 ],
                 wires: [
-                    { type: "wire_gnd", color: "#020617", path: [[-0.7, 0.3, -0.8], [-1, 1.8, -0.2], [1.2, 1.2, -1.2], [4.0, 0.25, -2.5]] },
-                    { type: "wire_sig", color: "#6366f1", path: [[-0.7, 0.3, 0.6], [0, 2.3, 1.0], [2.1, 1.2, -0.2], [3.2, 0.25, -0.5]] }
+                    { type: "wire_gnd", color: "#020617", path: [[-0.7, 0.35, -2.0], [0.8, 1.3, -2.1], [2.7, 1.1, -2.4], [4.1, 0.13, -2.5]] },
+                    { type: "wire_sig", color: "#6366f1", path: [[-0.7, 0.35, -0.8], [0.4, 1.2, -0.2], [1.6, 1.1, 0.4], [2.21, 0.24, 0.8]] }
                 ],
                 activeComponent: "buzzer",
                 interactiveType: "none",
@@ -421,8 +421,8 @@ void loop() {
                     }
                 ],
                 wires: [
-                    { type: "wire_gnd", color: "#020617", path: [[-0.7, 0.3, -0.8], [-1, 1.8, -0.2], [1.2, 1.2, -1.2], [4.0, 0.25, -2.5]] },
-                    { type: "wire_sig", color: "#ec4899", path: [[-0.7, 0.3, 0.9], [0, 2.1, 1.2], [2.2, 1.1, -0.2], [3.2, 0.25, -0.2]] }
+                    { type: "wire_gnd", color: "#020617", path: [[-0.7, 0.35, -2.0], [0.8, 1.3, -2.1], [2.7, 1.1, -2.4], [4.1, 0.13, -2.5]] },
+                    { type: "wire_sig", color: "#ec4899", path: [[-0.7, 0.35, 0.6], [0.4, 1.1, 0.8], [1.3, 0.9, 1.1], [1.91, 0.12, 1.39]] }
                 ],
                 activeComponent: "button",
                 interactiveType: "button",
@@ -2981,9 +2981,13 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
         }
 
         function runSimulationInterval() {
-            let ticker = false;
+            let blinkHigh = false;
+            let alarmHigh = false;
+            let simTick = 0;
+
             simInterval = setInterval(() => {
-                if(!isSimulating) return;
+                if (!isSimulating) return;
+                simTick++;
 
                 if (isFreeBuildMode) {
                     const types = new Set(placedComponents.map(g => g.userData.type));
@@ -2993,7 +2997,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
                     if (types.has('servo')) appendSerial(`Servo → Angle: ${freeBuildState.activeServoAngle}°`);
                     if (types.has('dc_motor')) {
                         const dir = freeBuildState.activeMotorSpeed >= 0 ? 'FWD' : 'REV';
-                        appendSerial(`DC Motor → ${dir} speed: ${Math.abs(freeBuildState.activeMotorSpeed)}%`);
+                        appendSerial(`DC Motor → ${dir} ${Math.abs(freeBuildState.activeMotorSpeed)}%`);
                     }
                     if (types.has('l298n') && freeBuildState.activeMotorSpeed !== 0) {
                         const dir = freeBuildState.activeMotorSpeed >= 0 ? 'FWD' : 'REV';
@@ -3004,30 +3008,39 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
                         appendSerial('Free build: place a sensor or actuator to see activity');
                     }
                     updatePlacedSensorVisuals();
-                }
-                else if(activePreset === "blink") {
-                    ticker = !ticker;
-                    setLEDOutput(ticker);
-                    appendSerial(ticker ? "LED: ON" : "LED: OFF");
-                }
-                else if (activePreset === "night") {
-                    const on = activeLdrLevel < 40;
-                    setLEDOutput(on);
-                    appendSerial(`LDR: ${activeLdrLevel}% → LED ${on ? 'ON' : 'OFF'}`);
-                }
-                else if (activePreset === "button") {
-                    setLEDOutput(activeButtonState);
-                    appendSerial(activeButtonState ? "Button: PRESSED → LED ON" : "Button: released");
-                }
-                else if (activePreset === "alarm") {
-                    ticker = !ticker;
-                    setBuzzerOutput(ticker, ticker ? 880 : 440);
-                    appendSerial(ticker ? "Buzzer: BEEP (880 Hz)" : "Buzzer: silence (440 Hz)");
-                }
-                else {
-                    appendSerial("Simulation tick");
+                    return;
                 }
 
+                if (activePreset === "blink") {
+                    // Arduino: digitalWrite(LED_PIN, HIGH/LOW) every 1 second → 500ms per half-cycle
+                    blinkHigh = !blinkHigh;
+                    setLEDOutput(blinkHigh);
+                    appendSerial(`digitalWrite(LED_PIN, ${blinkHigh ? 'HIGH' : 'LOW'})`);
+
+                } else if (activePreset === "night") {
+                    // Arduino: analogRead(LDR_PIN) returns 0-1023; LED ON when value < THRESHOLD(400)
+                    // slider 0% = dark = low ADC; 100% = bright = high ADC
+                    const analogVal = Math.round(activeLdrLevel * 10.23);
+                    const ledOn = analogVal < 400;
+                    setLEDOutput(ledOn);
+                    appendSerial(`lightLevel = ${analogVal} | LED ${ledOn ? 'ON (dark)' : 'OFF (bright)'}`);
+
+                } else if (activePreset === "button") {
+                    // Arduino: digitalRead(BUTTON_PIN) with INPUT_PULLUP — LOW when pressed
+                    const pinState = activeButtonState ? 'LOW' : 'HIGH';
+                    setLEDOutput(activeButtonState);
+                    appendSerial(`digitalRead(BUTTON) = ${pinState} → LED ${activeButtonState ? 'ON' : 'OFF'}`);
+
+                } else if (activePreset === "alarm") {
+                    // Arduino: alternates tone(BUZZER_PIN, 880) and tone(BUZZER_PIN, 440) every 250ms
+                    alarmHigh = !alarmHigh;
+                    const freq = alarmHigh ? 880 : 440;
+                    setBuzzerOutput(true, freq);
+                    appendSerial(`tone(BUZZER_PIN, ${freq}) // ${alarmHigh ? 'alert pitch' : 'low pitch'}`);
+
+                } else {
+                    appendSerial(`[tick ${simTick}] Simulation running`);
+                }
             }, 500);
         }
 
@@ -3048,15 +3061,25 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
 
         function setBuzzerOutput(state, freq) {
             const buzzer = customMeshes["buzzer"];
-            if(!buzzer) return;
-            if(state) {
-                buzzer.position.y = 0.05;
-                renderer.setClearColor(new THREE.Color("#fef3c7"), 1.0);
+            if (!buzzer) return;
+            if (state) {
+                buzzer.position.y = 0.17; // base 0.12 + 0.05 vibration offset
                 startBuzzerTone(freq || 880);
+                buzzer.traverse(ch => {
+                    if (ch.name === "buzzerBody" && ch.material) {
+                        ch.material.emissive.setHex(0x7c3aed);
+                        ch.material.emissiveIntensity = 0.3;
+                    }
+                });
             } else {
-                buzzer.position.y = 0;
-                renderer.setClearColor(new THREE.Color("#e8edf2"), 1.0);
+                buzzer.position.y = 0.12; // restore base position
                 stopBuzzerTone();
+                buzzer.traverse(ch => {
+                    if (ch.name === "buzzerBody" && ch.material) {
+                        ch.material.emissive.setHex(0x000000);
+                        ch.material.emissiveIntensity = 0;
+                    }
+                });
             }
         }
 
@@ -3258,13 +3281,6 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             const dt = (now - lastRenderTime) / 1000;
             lastRenderTime = now;
             controls.update();
-
-            if(customMeshes["board"]) {
-                customMeshes["board"].position.y = Math.sin(now * 0.0015) * 0.05;
-            }
-            if(customMeshes["breadboard"]) {
-                customMeshes["breadboard"].position.y = Math.sin(now * 0.0015) * 0.05;
-            }
 
             if (isSimulating && freeBuildState.activeMotorSpeed !== 0) {
                 placedComponents.forEach(g => {
