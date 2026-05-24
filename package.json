@@ -1,15 +1,21 @@
 {
   "name": "pilot",
-  "version": "1.0.0",
-  "description": "IoTify AI — Generative 3D IoT Lab & Tutor. An interactive browser-based sandbox for learning electronics with Three.js 3D visualization and AI-powered circuit generation.",
+  "version": "2.0.0",
+  "description": "IoTify AI — Generative 3D IoT Lab & Tutor. React + Vite + Three.js sandbox for learning electronics with AI-powered circuit generation.",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
   "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
     "vite": "^5.4.0"
   },
-  "keywords": ["iot", "arduino", "three.js", "education", "ai", "electronics"],
+  "keywords": ["iot", "arduino", "three.js", "education", "ai", "electronics", "react"],
   "license": "MIT"
 }
