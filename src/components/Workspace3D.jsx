@@ -166,7 +166,8 @@ export default function Workspace3D() {
           id="schematic-panel"
           className="absolute inset-4 md:inset-8 bg-white border border-slate-200 rounded-3xl p-6 hidden flex-col z-20 shadow-2xl max-w-xl overflow-y-auto"
         >
-          <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-3 border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
               <i className="fa-solid fa-diagram-project text-blue-500 text-lg"></i>
               <h3 className="font-bold text-slate-900">Circuit Schematic</h3>
@@ -178,9 +179,37 @@ export default function Workspace3D() {
               <i className="fa-solid fa-xmark text-lg"></i>
             </button>
           </div>
-          <div className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-center min-h-[220px]">
+
+          {/* Tab bar */}
+          <div className="flex gap-1 mb-3">
+            <button
+              id="schematic-tab-svg"
+              onClick={() => window._switchSchematicTab('svg')}
+              className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border-b-2 border-blue-600 text-blue-700 bg-blue-50 transition-all cursor-pointer"
+            >
+              <i className="fa-solid fa-vector-square text-[10px]"></i> Preset SVG
+            </button>
+            <button
+              id="schematic-tab-flow"
+              onClick={() => window._switchSchematicTab('flow')}
+              className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-all cursor-pointer"
+            >
+              <i className="fa-solid fa-share-nodes text-[10px]"></i> Flow Diagram
+            </button>
+          </div>
+
+          {/* SVG view */}
+          <div id="schematic-svg-tab" className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-center min-h-[220px]">
             <svg id="svg-schematic" viewBox="0 0 400 300" className="w-full max-h-[260px]"></svg>
           </div>
+
+          {/* Mermaid flow diagram view */}
+          <div id="schematic-flow-tab" className="hidden flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-4 min-h-[220px] overflow-auto">
+            <div id="mermaid-schematic" className="w-full flex items-center justify-center">
+              <p className="text-xs text-slate-400 italic">Generate an AI circuit or place a component to see the flow diagram.</p>
+            </div>
+          </div>
+
           <p
             id="schematic-description"
             className="text-xs text-slate-600 mt-4 leading-relaxed"

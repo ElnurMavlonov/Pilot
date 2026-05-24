@@ -9,6 +9,7 @@
 // ─────────────────────────────────────────────────────────────────
 
 import { ArduinoRuntime } from './arduino-runtime.js';
+import { initMermaid, generateWorkspaceMermaid, renderMermaidDiagram } from './mermaid-schematic.js';
 
 /* eslint-disable */
 /* global THREE */
@@ -909,6 +910,16 @@ LAYOUT RULES:
             refreshPlacedList();
             saveUndoSnapshot();
             glideCamera({ x: 0, y: 15, z: 8 }, { x: 0, y: 0, z: 0 });
+
+            // Auto-generate Mermaid flow diagram and switch to it
+            try {
+                await updateDynamicSchematic();
+                if (typeof window._switchSchematicTab === 'function') {
+                    window._switchSchematicTab('flow');
+                }
+            } catch (mErr) {
+                console.warn('[IoTify] Mermaid render failed:', mErr);
+            }
         }
 
         // ========================================================
@@ -1134,6 +1145,17 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
 
         function toggleSchematicPanel() {
             document.getElementById("schematic-panel").classList.toggle("hidden");
+        }
+
+        async function updateDynamicSchematic() {
+            const container = document.getElementById('mermaid-schematic');
+            if (!container) return;
+            try {
+                const diagramText = generateWorkspaceMermaid(placedComponents, placedWires, getComponentPinDefs);
+                await renderMermaidDiagram(container, diagramText);
+            } catch (err) {
+                console.warn('[IoTify] Schematic update failed:', err);
+            }
         }
 
 
@@ -1370,6 +1392,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             updateWireModeIndicator();
             saveUndoSnapshot();
             showToast('Wire connected! ⚡', false);
+            updateDynamicSchematic();
         }
 
         /** Rebuild all placed-wire meshes (call after a component is moved) */
@@ -3289,6 +3312,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             if (isWireMode) group.traverse(c => { if (c.userData.isPinSphere) c.visible = true; });
             placedComponents.push(group);
             updateUndoRedoUI();
+            if (!_inRestore) updateDynamicSchematic();
             return group;
         }
 
@@ -3479,6 +3503,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             selectedComponent = null;
             refreshPlacedList();
             updateUndoRedoUI();
+            updateDynamicSchematic();
         }
 
         /** Remove a free-placed component by its unique instanceId */
@@ -3492,6 +3517,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             placedComponents.splice(placedComponents.indexOf(g), 1);
             refreshPlacedList();
             updateUndoRedoUI();
+            updateDynamicSchematic();
         }
 
         /** Switch between Parts Library, Firmware IDE, and Serial Monitor tabs (right panel) */
@@ -3721,6 +3747,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
         function ctxDelete() {
             if (!ctxTarget) return;
             saveUndoSnapshot();
+            removeWiresForComponent(ctxTarget.userData.instanceId);
             scene.remove(ctxTarget);
             placedComponents.splice(placedComponents.indexOf(ctxTarget), 1);
             if (selectedComponent === ctxTarget) selectedComponent = null;
@@ -3728,6 +3755,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             closeCtxMenu();
             refreshPlacedList();
             updateUndoRedoUI();
+            updateDynamicSchematic();
         }
 
         // ========================================================
@@ -3741,6 +3769,13 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
                     x: parseFloat(g.position.x.toFixed(3)),
                     z: parseFloat(g.position.z.toFixed(3)),
                     instanceId: g.userData.instanceId
+                })),
+                wires: placedWires.map(w => ({
+                    fromCompId: w.fromCompId,
+                    fromPinIdx: w.fromPinIdx,
+                    toCompId: w.toCompId,
+                    toPinIdx: w.toPinIdx,
+                    color: w.color
                 })),
                 counters: { ...componentCounters },
                 selectedId: selectedComponent ? selectedComponent.userData.instanceId : null
@@ -3757,6 +3792,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
 
         function restoreSnapshot(snap) {
             _inRestore = true;
+            clearAllPlacedWires();
             placedComponents.forEach(g => scene.remove(g));
             placedComponents = [];
             selectedComponent = null;
@@ -3769,9 +3805,33 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
                 const target = placedComponents.find(g => g.userData.instanceId === snap.selectedId);
                 if (target) selectComponent(target);
             }
+            // Recreate all wires
+            if (Array.isArray(snap.wires)) {
+                snap.wires.forEach(w => {
+                    const fromG = placedComponents.find(g => g.userData.instanceId === w.fromCompId);
+                    const toG   = placedComponents.find(g => g.userData.instanceId === w.toCompId);
+                    if (!fromG || !toG) return;
+                    const fromDefs = getComponentPinDefs(fromG);
+                    const toDefs   = getComponentPinDefs(toG);
+                    const fS = fromG.getObjectByName(`pin_${w.fromPinIdx}`);
+                    const tS = toG.getObjectByName(`pin_${w.toPinIdx}`);
+                    if (!fS || !tS) return;
+                    const fp = new THREE.Vector3(), tp = new THREE.Vector3();
+                    fS.getWorldPosition(fp); tS.getWorldPosition(tp);
+                    const mesh = createWireTube(generateWirePath(fp, tp), w.color || '#ef4444');
+                    scene.add(mesh);
+                    placedWires.push({
+                        id:         `wire_${++wireIdCounter}`,
+                        fromCompId: w.fromCompId, fromPinIdx: w.fromPinIdx,
+                        toCompId:   w.toCompId,   toPinIdx:   w.toPinIdx,
+                        color: w.color || '#ef4444', mesh
+                    });
+                });
+            }
             _inRestore = false;
             refreshPlacedList();
             updateUndoRedoUI();
+            updateDynamicSchematic();
         }
 
         function undo() {
@@ -5066,6 +5126,30 @@ export function initIotifyApp() {
     if (__iotifyInited) return;
     __iotifyInited = true;
 
+    initMermaid();
+
+    window._switchSchematicTab = function(tab) {
+        const svgTab  = document.getElementById('schematic-svg-tab');
+        const flowTab = document.getElementById('schematic-flow-tab');
+        const btnSvg  = document.getElementById('schematic-tab-svg');
+        const btnFlow = document.getElementById('schematic-tab-flow');
+        if (!svgTab || !flowTab) return;
+        const isSvg = tab === 'svg';
+        // Show/hide panes
+        svgTab.classList.toggle('hidden', !isSvg);
+        flowTab.classList.toggle('hidden', isSvg);
+        // Active styles
+        const activeClass   = ['border-blue-600','text-blue-700','bg-blue-50','border-b-2'];
+        const inactiveClass = ['border-transparent','text-slate-500','border-b-2'];
+        const setTab = (btn, isActive) => {
+            if (!btn) return;
+            btn.classList.remove(...activeClass, ...inactiveClass);
+            btn.classList.add(...(isActive ? activeClass : inactiveClass));
+        };
+        setTab(btnSvg,  isSvg);
+        setTab(btnFlow, !isSvg);
+    };
+
     initPanels();
     initTheme();
     initAutoSave();
@@ -5073,6 +5157,8 @@ export function initIotifyApp() {
     buildPartsLibraryUI();
     initTour();
     enterFreeBuildMode();
+
+    updateDynamicSchematic();
 }
 
 // ─────────────────────────────────────────────────────────────────
