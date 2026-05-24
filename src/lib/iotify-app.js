@@ -3629,13 +3629,23 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
                     : g.userData.type;
 
                 const iid = g.userData.instanceId;
-                row.innerHTML = `
-                    <span class="font-medium truncate capitalize">${label}</span>
-                    <button onclick="event.stopPropagation();deleteComponentById('${iid}')"
-                        class="p-1 hover:bg-red-50 hover:text-red-500 rounded text-slate-400 transition shrink-0">
-                        <i class="fa-solid fa-trash-can text-[10px]"></i>
-                    </button>
-                `;
+
+                const labelEl = document.createElement('span');
+                labelEl.className = 'font-medium truncate capitalize';
+                labelEl.textContent = label;
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.type = 'button';
+                deleteBtn.className = 'p-1 hover:bg-red-50 hover:text-red-500 rounded text-slate-400 transition shrink-0';
+                deleteBtn.title = 'Delete component';
+                deleteBtn.innerHTML = '<i class="fa-solid fa-trash-can text-[10px]"></i>';
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteComponentById(iid);
+                });
+
+                row.appendChild(labelEl);
+                row.appendChild(deleteBtn);
                 row.addEventListener('click', () => selectComponent(g));
                 list.appendChild(row);
             });
