@@ -34,15 +34,15 @@ function ToolBtn({ id, icon, label, onClick, active = false, disabled = false })
   );
 }
 
-/* ── AI Tutor suggestion button ── */
-function SuggestionBtn({ children, onClick }) {
+/* ── AI Tutor question chip ── */
+function QuestionChip({ children, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-between text-left text-[12px] text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors cursor-pointer group"
+      className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 rounded-full px-2.5 py-1 transition-all duration-150 cursor-pointer font-medium leading-tight"
     >
-      <span>{children}</span>
-      <i className="fa-solid fa-chevron-right text-[10px] opacity-50 group-hover:opacity-100 transition-opacity"></i>
+      <i className="fa-solid fa-sparkles text-purple-400" style={{ fontSize: '7px' }}></i>
+      {children}
     </button>
   );
 }
@@ -432,100 +432,88 @@ export default function Workspace3D() {
         </div>
 
         {/* ── RIGHT: AI Tutor ── */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Panel header */}
-          <div className="px-4 pt-3 pb-2 border-b border-slate-100 shrink-0 flex items-center gap-2">
-            <i className="fa-solid fa-wand-magic-sparkles text-purple-500 text-sm"></i>
-            <h3 className="text-sm font-bold text-slate-900">AI Tutor</h3>
-            <span className="ml-auto text-[10px] text-slate-400 font-medium">Ask questions · Build circuits</span>
+        <div className="flex-1 flex flex-col overflow-hidden bg-white">
+
+          {/* ── Zone 1: Header (always visible, fixed) ── */}
+          <div className="px-3 pt-2.5 pb-2 border-b border-slate-100 shrink-0 flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shrink-0">
+              <i className="fa-solid fa-wand-magic-sparkles text-white" style={{ fontSize: '9px' }}></i>
+            </div>
+            <h3 className="text-xs font-bold text-slate-900">AI Tutor</h3>
+            <div className="ml-auto flex items-center gap-1">
+              <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-semibold tracking-wide">ASK</span>
+              <span className="text-[9px] px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded font-semibold tracking-wide">BUILD</span>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 min-h-0">
-            {/* Greeting + quick-start presets (shown when no chat yet) */}
-            <div id="tutor-welcome">
-              <p className="text-sm font-semibold text-slate-800">Hi there! 👋</p>
-              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                I&apos;m your AI Tutor. Ask me anything about your circuit, or describe a project to build it automatically.
-              </p>
-
-              {/* Quick-start presets */}
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                <button
-                  onClick={() => applyPreset('blink')}
-                  className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-medium"
-                >
-                  <i className="fa-solid fa-lightbulb text-amber-400"></i> LED Blink
-                </button>
-                <button
-                  onClick={() => applyPreset('night')}
-                  className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-medium"
-                >
-                  <i className="fa-solid fa-moon text-slate-400"></i> Night Light
-                </button>
-                <button
-                  onClick={() => applyPreset('alarm')}
-                  className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-medium"
-                >
-                  <i className="fa-solid fa-bell text-red-400"></i> Siren Alarm
-                </button>
-                <button
-                  onClick={() => applyPreset('button')}
-                  className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-medium"
-                >
-                  <i className="fa-solid fa-hand-pointer text-blue-400"></i> Push Trigger
-                </button>
-                <button
-                  onClick={openCommunityLibrary}
-                  className="inline-flex items-center gap-1 text-[10px] bg-gradient-to-r from-purple-500 to-blue-600 text-white hover:from-purple-600 hover:to-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-semibold"
-                >
-                  <i className="fa-solid fa-users text-[9px]"></i> Community
-                </button>
-              </div>
-
-              {/* Suggestion buttons */}
-              <div className="space-y-0.5 mt-2 -mx-1">
-                <SuggestionBtn onClick={() => askAITutor('Why is my LED not turning on?')}>
-                  Why is my LED not turning on?
-                </SuggestionBtn>
-                <SuggestionBtn onClick={() => askAITutor('How does a resistor work?')}>
-                  How does a resistor work?
-                </SuggestionBtn>
-                <SuggestionBtn onClick={() => askAITutor('Explain this circuit step by step')}>
-                  Explain this circuit step by step
-                </SuggestionBtn>
-                <SuggestionBtn onClick={() => askAITutor('How can I improve this project?')}>
-                  How can I improve this project?
-                </SuggestionBtn>
-              </div>
+          {/* ── Zone 2: Welcome (collapsed after first message) ── */}
+          <div id="tutor-welcome" className="shrink-0 px-3 pt-2.5 pb-2.5 border-b border-slate-50 bg-slate-50/50">
+            {/* Preset lab chips */}
+            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5">Quick Labs</p>
+            <div className="flex flex-wrap gap-1 mb-3">
+              <button onClick={() => applyPreset('blink')}
+                className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-700 rounded-lg px-2 py-1 transition-all duration-150 cursor-pointer font-medium shadow-sm">
+                <i className="fa-solid fa-lightbulb text-amber-400" style={{ fontSize: '9px' }}></i> LED Blink
+              </button>
+              <button onClick={() => applyPreset('night')}
+                className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-lg px-2 py-1 transition-all duration-150 cursor-pointer font-medium shadow-sm">
+                <i className="fa-solid fa-moon text-slate-400" style={{ fontSize: '9px' }}></i> Night Light
+              </button>
+              <button onClick={() => applyPreset('alarm')}
+                className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-red-50 hover:border-red-200 hover:text-red-600 rounded-lg px-2 py-1 transition-all duration-150 cursor-pointer font-medium shadow-sm">
+                <i className="fa-solid fa-bell text-red-400" style={{ fontSize: '9px' }}></i> Alarm
+              </button>
+              <button onClick={() => applyPreset('button')}
+                className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 rounded-lg px-2 py-1 transition-all duration-150 cursor-pointer font-medium shadow-sm">
+                <i className="fa-solid fa-hand-pointer text-blue-400" style={{ fontSize: '9px' }}></i> Button
+              </button>
+              <button onClick={openCommunityLibrary}
+                className="inline-flex items-center gap-1 text-[10px] bg-gradient-to-r from-purple-500 to-blue-600 text-white hover:from-purple-600 hover:to-blue-700 rounded-lg px-2 py-1 transition-all duration-150 cursor-pointer font-semibold shadow-sm">
+                <i className="fa-solid fa-users" style={{ fontSize: '8px' }}></i> Community
+              </button>
             </div>
 
-            {/* ── Chat history (messages appended here by JS) ── */}
-            <div
-              id="tutor-chat"
-              className="flex flex-col gap-2.5 min-h-0"
-            />
+            {/* Question chips (compact pills, wrap naturally) */}
+            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5">Ask me</p>
+            <div className="flex flex-wrap gap-1">
+              <QuestionChip onClick={() => askAITutor('Why is my LED not turning on?')}>LED not on?</QuestionChip>
+              <QuestionChip onClick={() => askAITutor('How does a resistor work?')}>How resistors work?</QuestionChip>
+              <QuestionChip onClick={() => askAITutor('Explain this circuit step by step')}>Explain circuit</QuestionChip>
+              <QuestionChip onClick={() => askAITutor('How can I improve this project?')}>Improve project?</QuestionChip>
+              <QuestionChip onClick={() => askAITutor('What does GND mean?')}>What is GND?</QuestionChip>
+              <QuestionChip onClick={() => askAITutor('Why do I need a resistor with an LED?')}>Why a resistor?</QuestionChip>
+            </div>
+          </div>
 
-            {/* Spacer to push input to bottom */}
-            <div className="flex-1" />
+          {/* ── Zone 3: Chat history (flex-1 — ONLY this scrolls) ── */}
+          <div
+            id="tutor-chat"
+            className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-3 min-h-0"
+            style={{ scrollbarWidth: 'thin', scrollbarColor: '#e2e8f0 transparent' }}
+          />
 
-            {/* AI input */}
-            <div className="relative shrink-0">
+          {/* ── Zone 4: Input (always pinned to bottom) ── */}
+          <div className="shrink-0 border-t border-slate-100 px-3 py-2.5 bg-white">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus-within:border-blue-400 focus-within:bg-white transition-colors">
               <input
                 id="ai-input"
                 type="text"
-                placeholder="Ask a question or describe a circuit to build…"
+                placeholder="Ask anything or describe a circuit…"
                 onKeyDown={(e) => { if (e.key === 'Enter') generateAICircuit(); }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
+                className="flex-1 bg-transparent text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none min-w-0"
               />
               <button
                 id="btn-generate-ai"
                 onClick={generateAICircuit}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition cursor-pointer"
                 title="Send (Enter)"
+                className="shrink-0 w-6 h-6 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg flex items-center justify-center transition-all duration-150 cursor-pointer"
               >
-                <i className="fa-solid fa-arrow-right text-[10px]"></i>
+                <i className="fa-solid fa-arrow-right" style={{ fontSize: '9px' }}></i>
               </button>
             </div>
+            <p className="text-[9px] text-slate-400 text-center mt-1.5">
+              Type a question to ask · Describe a circuit to build it
+            </p>
           </div>
         </div>
       </div>

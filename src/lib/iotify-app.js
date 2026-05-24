@@ -1126,6 +1126,14 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
 
         /** Append a chat bubble to #tutor-chat; returns the message DOM id */
         function appendTutorMessage(role, text, isLoading = false) {
+            // Collapse welcome section on first message
+            const welcomeEl = document.getElementById('tutor-welcome');
+            if (welcomeEl && welcomeEl.style.display !== 'none') {
+                welcomeEl.style.transition = 'opacity 0.2s ease';
+                welcomeEl.style.opacity = '0';
+                setTimeout(() => { welcomeEl.style.display = 'none'; }, 200);
+            }
+
             const chatEl = document.getElementById('tutor-chat');
             if (!chatEl) return null;
             const id  = `tm-${++tutorMsgCounter}`;
@@ -1134,14 +1142,17 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
 
             if (role === 'user') {
                 div.className = 'flex justify-end';
-                div.innerHTML = `<div class="max-w-[80%] bg-blue-600 text-white rounded-2xl rounded-tr-sm px-3 py-2 text-[11px] leading-relaxed">${escapeHtml(text)}</div>`;
+                div.innerHTML = `<div class="max-w-[82%] bg-blue-600 text-white rounded-2xl rounded-tr-sm px-3 py-2 text-[11px] leading-relaxed font-medium shadow-sm">${escapeHtml(text)}</div>`;
             } else {
                 div.className = 'flex justify-start items-start gap-2';
+                const bubbleCls = isLoading
+                    ? 'tutor-bubble max-w-[86%] bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-3 py-2.5 text-[11px] text-slate-400 leading-relaxed shadow-sm animate-pulse'
+                    : 'tutor-bubble max-w-[86%] bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-3 py-2.5 text-[11px] text-slate-700 leading-relaxed shadow-sm';
                 div.innerHTML = `
-                    <div class="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
-                        <i class="fa-solid fa-wand-magic-sparkles text-purple-500" style="font-size:8px"></i>
+                    <div class="w-5 h-5 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles text-white" style="font-size:7px"></i>
                     </div>
-                    <div class="max-w-[85%] bg-slate-50 border border-slate-200 rounded-2xl rounded-tl-sm px-3 py-2 text-[11px] text-slate-700 leading-relaxed tutor-bubble${isLoading ? ' animate-pulse text-slate-400' : ''}">${isLoading ? text : escapeHtml(text)}</div>`;
+                    <div class="${bubbleCls}">${isLoading ? '<span style="letter-spacing:3px">●●●</span>' : escapeHtml(text)}</div>`;
             }
             chatEl.appendChild(div);
             chatEl.scrollTop = chatEl.scrollHeight;
