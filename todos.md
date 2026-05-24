@@ -6,41 +6,38 @@
 
 ---
 
-- [ ] **[DESIGN TOKENS] Define new color palette, spacing scale, and typography system** | Due: 05/26/2026
-  - Extract exact colors, radii, font sizes from the target screenshot
-  - Update `src/styles/app.css` with CSS custom properties (`--color-*`, `--radius-*`, `--space-*`)
-  - Keep Plus Jakarta Sans + JetBrains Mono; adjust weight/size usage
+- [x] **[DESIGN TOKENS] Define new color palette, spacing scale, and typography system** | ✅ 2026-05-24
+  - Blue #2563EB primary (CSS --blue-primary), --blue-light, --blue-hover tokens in app.css
+  - Subtle grid-bg, lighter scrollbars, refined typography scale
 
-- [ ] **[LAYOUT] Convert 3-column layout to match target proportions** | Due: 05/27/2026
-  - Left panel: narrower icon-rail + expandable drawer (like VS Code Activity Bar)
-  - Right panel: wider, card-based sections instead of flat list
-  - Workspace: tighter inset padding, updated grid-bg subtle pattern
+- [x] **[LAYOUT] Convert 3-column layout to match target proportions** | ✅ 2026-05-24
+  - App.jsx: flex-col (TopBar + content row + StatusBar)
+  - Left nav: 200px default (was 480px), LEFT_MIN=160 LEFT_MAX=320
+  - Right panel: 320px default, RIGHT_MIN=240 RIGHT_MAX=520
+  - Workspace: top toolbar + canvas + bottom panels (Analysis & Steps | AI Tutor)
 
-- [ ] **[TOP BAR] Add a persistent top/title bar component** | Due: 05/27/2026
-  - Create `src/components/TopBar.jsx`
-  - Contains: logo + app name (left), project name + breadcrumb (center), action buttons (right: share, export, dark mode)
-  - Move save/load/export/share buttons out of LeftPanel header into TopBar
-  - Mount it in `App.jsx` above the 3-panel row
+- [x] **[TOP BAR] Add a persistent top/title bar component** | ✅ 2026-05-24
+  - Created `src/components/TopBar.jsx` — Pilot PRO logo, project name + Saved status, collaborator avatars, Run Simulation, Save, Share, dark-mode, bell, user profile
+  - Created `src/components/StatusBar.jsx` — Simulator status, board selector, Auto Save
+  - Moved btn-simulation and save/share/dark-toggle into TopBar
 
-- [ ] **[LEFT PANEL] Redesign LeftPanel header and control sections** | Due: 05/28/2026
-  - Replace busy icon-button row with a clean icon-rail (vertical icon strip, tooltip on hover)
-  - Make brand header more compact — just logo icon + "IoTify" wordmark
-  - Move "Live IDE" status badge to TopBar or bottom of left rail
-  - Section dividers: use subtle labels (`CONTROLS`, `PRESETS`, `SENSORS`) not just spacing
-  - Rounded card containers for each sensor/control group
+- [x] **[LEFT PANEL] Redesign LeftPanel as pure navigation sidebar** | ✅ 2026-05-24
+  - MAIN: Dashboard, Projects, Virtual Lab (active)
+  - LEARNING: AI Tutor, Learn
+  - COMMUNITY: Community, Achievements
+  - Bottom: Settings, Support
+  - All AI/step controls moved to workspace bottom panels
 
-- [ ] **[RIGHT PANEL] Redesign RightPanel tabs and Parts Library** | Due: 05/28/2026
-  - Replace pill/underline tabs with segmented control style tabs matching screenshot
-  - Parts search bar: larger, pill-shaped with stronger contrast
-  - Component cards: larger drag targets, show icon + label + category badge
-  - Firmware IDE tab: add a cleaner code editor toolbar (run, copy, clear buttons as icon group)
-  - Serial & Scope tabs: dark terminal-style background for content area
+- [x] **[RIGHT PANEL] Redesign RightPanel tabs and Parts Library** | ✅ 2026-05-24
+  - Tabs: Components / Code / Serial Monitor / Scope (with icons, blue active state)
+  - Accordion sections: Boards, Inputs, Outputs, Sensors, Power (collapsible, Boards open by default)
+  - Search bar with filter icon, dark terminal style for Serial/Scope
+  - Serial panel: dark bg with send input, Scope: time selector dropdown
 
-- [ ] **[WORKSPACE] Polish the 3D canvas area** | Due: 05/29/2026
-  - Update `Workspace3D.jsx` toolbar (zoom, fit, reset) to match target icon style
-  - Floating toolbar: pill-shaped container, frosted glass or solid background
-  - Selection handles (`ResizeHandles.jsx`): thinner lines, accent-color corner dots
-  - Empty state: centered illustration or message when canvas is empty
+- [x] **[WORKSPACE] Add canvas toolbar + split bottom panels** | ✅ 2026-05-24
+  - Top toolbar: Select, Pan, Zoom −/100%/+, Fit, Undo/Redo, Mute, Wire, Color, Schematic, panel toggles
+  - Bottom LEFT: Analysis & Steps (step-box, hardware controls, tip, prev/next nav)
+  - Bottom RIGHT: AI Tutor (greeting, presets, suggestions, ai-input)
 
 - [ ] **[CONTEXT MENU] Restyle ContextMenu to match target** | Due: 05/29/2026
   - Rounded corners (`rounded-xl`), subtle shadow, backdrop blur

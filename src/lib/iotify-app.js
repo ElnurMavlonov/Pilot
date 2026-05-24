@@ -16,12 +16,12 @@
         // PANEL SYSTEM — VS Code-style closable & resizable panels
         // ─────────────────────────────────────────────────────────
 
-        const DEFAULT_LEFT_WIDTH  = 480;
-        const DEFAULT_RIGHT_WIDTH = 300;
-        const LEFT_MIN  = 280;
-        const LEFT_MAX  = 720;
-        const RIGHT_MIN = 200;
-        const RIGHT_MAX = 580;
+        const DEFAULT_LEFT_WIDTH  = 200;
+        const DEFAULT_RIGHT_WIDTH = 320;
+        const LEFT_MIN  = 160;
+        const LEFT_MAX  = 320;
+        const RIGHT_MIN = 240;
+        const RIGHT_MAX = 520;
 
         let leftPanelOpen  = true;
         let rightPanelOpen = true;
@@ -182,7 +182,7 @@
         // APPLICATION CORE
         // ─────────────────────────────────────────────────────────
 
-        const apiKey = "";
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
 
         // Procedural Circuit Presets
         const PRESETS = {
@@ -729,7 +729,7 @@ Return ONLY a valid JSON object matching this TypeScript structure:
             try {
                 if (!apiKey) throw new Error("Missing API Key");
 
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
                 const payload = {
                     contents: [{ parts: [{ text: `User request: "${promptText}"` }] }],
                     systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -854,7 +854,7 @@ LAYOUT RULES:
 
             try {
                 if (!apiKey) throw new Error("no key");
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
                 const resp = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -3384,9 +3384,9 @@ LAYOUT RULES:
                 const btn = document.getElementById(`tab-${t}`);
                 if (!btn) return;
                 const active = t === tabName;
-                btn.classList.toggle('border-indigo-600', active);
-                btn.classList.toggle('text-indigo-700', active);
-                btn.classList.toggle('bg-indigo-50', active);
+                btn.classList.toggle('border-blue-600', active);
+                btn.classList.toggle('text-blue-700', active);
+                btn.classList.toggle('bg-blue-50', active);
                 btn.classList.toggle('border-transparent', !active);
                 btn.classList.toggle('text-slate-500', !active);
             });
