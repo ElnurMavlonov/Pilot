@@ -674,16 +674,38 @@ void loop() {
         let activeWireColor = '#ef4444';
         let hoveredPinSphere = null;
 
+        // AI Free-Build Steps (generated alongside circuit)
+        let aiFreeBuildSteps      = [];
+        let aiFreeBuildStepIndex  = 0;
+
+        // AI Tutor Chat
+        let tutorMsgCounter = 0;
+
         // ========================================================
         // GEMINI AI INTEGRATION (30 Points Technical Metric)
         // ========================================================
+        /** Detect whether user typed a question (→ AI tutor) or a build request (→ circuit gen) */
+        function isQuestion(text) {
+            const lower = text.toLowerCase().trim();
+            if (lower.endsWith('?')) return true;
+            const starters = ['why ','how ','what ','explain ','help ','is ','does ','can ','should ','tell me','show me','describe ','define ','when ','where ','which ','who '];
+            return starters.some(s => lower.startsWith(s));
+        }
+
         async function generateAICircuit() {
             const inputField = document.getElementById("ai-input");
             const promptText = inputField.value.trim();
             if(!promptText) return;
 
+            // Route to AI tutor chat for questions, circuit builder for build requests
+            if (isQuestion(promptText)) {
+                await askAITutor(promptText);
+                return;
+            }
+
             // Always use the component-library builder — auto-switch to free-build mode if needed
             if (!isFreeBuildMode) enterFreeBuildMode();
+            inputField.value = '';
             await generateAIFreeBuildCircuit(promptText);
             return;
 
@@ -835,6 +857,12 @@ Return ONLY valid JSON matching this schema exactly — no markdown, no extra ke
     { "fromComponent": 2, "fromPin": "pin2",     "toComponent": 1, "toPin": "anode(+)",  "color": "#ef4444" },
     { "fromComponent": 0, "fromPin": "GND",      "toComponent": 1, "toPin": "cathode(-)", "color": "#1e293b" }
   ],
+  "steps": [
+    { "title": "1. Place the Microcontroller", "desc": "Begin by placing the Arduino Uno — it is the brain of the circuit. All other components connect back to it.", "tip": "Always start with the microcontroller so wiring stays organised." },
+    { "title": "2. Add the Components", "desc": "Place the LED and 220Ω resistor on the workspace. The resistor limits current to protect the LED.", "tip": "LEDs have polarity — the longer leg (anode) connects to the positive signal." },
+    { "title": "3. Wire the Circuit", "desc": "Connect the resistor to the LED anode, then from the Arduino pin to the resistor, and GND to the LED cathode.", "tip": "Follow the color convention: red = power, black = GND, blue/purple = signal." },
+    { "title": "4. Run the Simulation", "desc": "Press Run Simulation to execute the uploaded firmware and observe the circuit behaviour in real time.", "tip": "Open the Serial Monitor tab to see debug output from Serial.println() calls." }
+  ],
   "code": "// Arduino C++ sketch\nvoid setup() {}\nvoid loop() {}",
   "explanation": "Plain-English description of how the circuit works"
 }
@@ -895,10 +923,22 @@ LAYOUT RULES:
                                             required: ["fromComponent","fromPin","toComponent","toPin"]
                                         }
                                     },
+                                    steps: {
+                                        type: "ARRAY",
+                                        items: {
+                                            type: "OBJECT",
+                                            properties: {
+                                                title: { type: "STRING" },
+                                                desc:  { type: "STRING" },
+                                                tip:   { type: "STRING" }
+                                            },
+                                            required: ["title","desc","tip"]
+                                        }
+                                    },
                                     code:        { type: "STRING" },
                                     explanation: { type: "STRING" }
                                 },
-                                required: ["description","components","connections","code","explanation"]
+                                required: ["description","components","connections","steps","code","explanation"]
                             }
                         }
                     })
@@ -969,19 +1009,157 @@ LAYOUT RULES:
                 const ce = document.getElementById('code-content');
                 if (ce) ce.value = data.code;
             }
-            // Show explanation in step panel
-            if (data.explanation) {
-                const d = document.getElementById('step-desc');
-                if (d) d.textContent = data.explanation;
-                const t = document.getElementById('step-title');
-                if (t) t.textContent = '🤖 AI-Generated Circuit';
-                const i = document.getElementById('step-index');
-                if (i) i.textContent = 'AI Build';
-            }
+            // Populate step-by-step instructions from AI response
+            aiFreeBuildSteps = (data.steps && data.steps.length > 0)
+                ? data.steps
+                : [{ title: '🤖 AI-Generated Circuit', desc: data.explanation || 'Circuit built successfully!', tip: 'Use the Wire Tool (W) to inspect connections. Press Run to simulate.' }];
+            aiFreeBuildStepIndex = 0;
+            renderAIFreeBuildStep(0);
 
             refreshPlacedList();
             saveUndoSnapshot();
             glideCamera({ x: 0, y: 15, z: 8 }, { x: 0, y: 0, z: 0 });
+        }
+
+        // ========================================================
+        // AI FREE-BUILD STEP RENDERER
+        // ========================================================
+        function renderAIFreeBuildStep(index) {
+            const steps = aiFreeBuildSteps;
+            if (!steps.length) return;
+            const step = steps[Math.max(0, Math.min(index, steps.length - 1))];
+            aiFreeBuildStepIndex = Math.max(0, Math.min(index, steps.length - 1));
+
+            const si   = document.getElementById('step-index');
+            const st   = document.getElementById('step-title');
+            const sd   = document.getElementById('step-desc');
+            const stip = document.getElementById('step-tip');
+            const dots = document.getElementById('step-dot-container');
+            const prev = document.getElementById('btn-prev');
+            const next = document.getElementById('btn-next');
+
+            if (si) si.textContent = `Step ${aiFreeBuildStepIndex + 1} of ${steps.length}`;
+            if (st) st.textContent = step.title;
+            if (sd) sd.textContent = step.desc;
+            if (stip) stip.textContent = step.tip || '';
+
+            if (dots) {
+                dots.innerHTML = '';
+                steps.forEach((_, idx) => {
+                    const dot = document.createElement('div');
+                    dot.className = `h-2 rounded-full transition-all duration-300 ${idx === aiFreeBuildStepIndex ? 'bg-indigo-600 w-5' : 'bg-slate-300 w-2'}`;
+                    dots.appendChild(dot);
+                });
+            }
+            if (prev) prev.disabled = aiFreeBuildStepIndex === 0;
+            if (next) {
+                const isLast = aiFreeBuildStepIndex === steps.length - 1;
+                next.innerHTML = isLast
+                    ? `Run Sim <i class="fa-solid fa-play ml-1"></i>`
+                    : `Next <i class="fa-solid fa-chevron-right"></i>`;
+                next.className = isLast
+                    ? "px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white transition-colors rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                    : "px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer";
+            }
+        }
+
+        // ========================================================
+        // AI TUTOR — Conversational Q&A
+        // ========================================================
+
+        /** Build a plain-English summary of the current circuit for context */
+        function buildCircuitContext() {
+            if (isFreeBuildMode && placedComponents.length > 0) {
+                const compList = placedComponents
+                    .map(g => g.userData.label || g.userData.type)
+                    .join(', ');
+                const wireCount = placedWires.length;
+                const code = (document.getElementById('code-content')?.value || '').substring(0, 600);
+                return `The student is in free-build mode with the following components: ${compList}. ${wireCount} wire(s) connected.\n\nFirmware code currently loaded:\n${code}`;
+            }
+            const preset = PRESETS[activePreset];
+            const step   = preset?.steps[activeStep];
+            return `The student is following the "${preset?.title || activePreset}" guided lab. Current step ${activeStep + 1}: "${step?.title}" — ${step?.desc}`;
+        }
+
+        /** Ask the AI tutor a question and stream the reply into the chat panel */
+        async function askAITutor(question) {
+            if (!question.trim()) return;
+            const inputEl = document.getElementById('ai-input');
+            if (inputEl) inputEl.value = '';
+
+            appendTutorMessage('user', question);
+            const loadingId = appendTutorMessage('ai', '●●●', true);
+
+            try {
+                if (!apiKey) throw new Error('no key');
+
+                const context = buildCircuitContext();
+                const systemPrompt = `You are an expert electronics and Arduino tutor helping a student learn through a 3D virtual circuit lab called Pilot.
+
+Current lab context:
+${context}
+
+Answer the student's question in a friendly, clear, and concise way. Reference their specific components and connections when relevant. Keep answers to 2–3 sentences unless the question genuinely requires more detail. Use plain English — avoid excessive jargon.`;
+
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                const resp = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: question }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        generationConfig: { maxOutputTokens: 512 }
+                    })
+                });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data   = await resp.json();
+                const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm not sure — could you rephrase that?";
+                updateTutorMessage(loadingId, answer);
+            } catch (err) {
+                console.error('AI tutor error:', err);
+                updateTutorMessage(loadingId, apiKey
+                    ? "Sorry, I couldn't reach the AI right now. Please try again."
+                    : "No API key found. Add VITE_GEMINI_API_KEY to your .env file.");
+            }
+        }
+
+        /** Append a chat bubble to #tutor-chat; returns the message DOM id */
+        function appendTutorMessage(role, text, isLoading = false) {
+            const chatEl = document.getElementById('tutor-chat');
+            if (!chatEl) return null;
+            const id  = `tm-${++tutorMsgCounter}`;
+            const div = document.createElement('div');
+            div.id = id;
+
+            if (role === 'user') {
+                div.className = 'flex justify-end';
+                div.innerHTML = `<div class="max-w-[80%] bg-blue-600 text-white rounded-2xl rounded-tr-sm px-3 py-2 text-[11px] leading-relaxed">${escapeHtml(text)}</div>`;
+            } else {
+                div.className = 'flex justify-start items-start gap-2';
+                div.innerHTML = `
+                    <div class="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                        <i class="fa-solid fa-wand-magic-sparkles text-purple-500" style="font-size:8px"></i>
+                    </div>
+                    <div class="max-w-[85%] bg-slate-50 border border-slate-200 rounded-2xl rounded-tl-sm px-3 py-2 text-[11px] text-slate-700 leading-relaxed tutor-bubble${isLoading ? ' animate-pulse text-slate-400' : ''}">${isLoading ? text : escapeHtml(text)}</div>`;
+            }
+            chatEl.appendChild(div);
+            chatEl.scrollTop = chatEl.scrollHeight;
+            return id;
+        }
+
+        /** Replace loading indicator text with the actual AI response */
+        function updateTutorMessage(id, text) {
+            if (!id) return;
+            const el = document.getElementById(id);
+            if (!el) return;
+            const bubble = el.querySelector('.tutor-bubble');
+            if (bubble) {
+                bubble.classList.remove('animate-pulse', 'text-slate-400');
+                bubble.textContent = text;
+            }
+            const chatEl = document.getElementById('tutor-chat');
+            if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
         }
 
         function showToast(message, isPersistent) {
@@ -1048,6 +1226,14 @@ LAYOUT RULES:
         }
 
         function moveStep(direction) {
+            // In free-build mode, navigate AI-generated steps (no camera moves)
+            if (isFreeBuildMode && aiFreeBuildSteps.length > 0) {
+                const target = aiFreeBuildStepIndex + direction;
+                if (target >= 0 && target < aiFreeBuildSteps.length) {
+                    renderAIFreeBuildStep(target);
+                }
+                return;
+            }
             const data = PRESETS[activePreset];
             const target = activeStep + direction;
             if(target >= 0 && target < data.steps.length) {
@@ -4898,7 +5084,7 @@ export {
     // tabs / theme / shortcuts
     switchTab, toggleDarkMode, toggleShortcutsOverlay,
     // AI
-    generateAICircuit,
+    generateAICircuit, askAITutor,
     // parts library
     filterParts,
     // free-build interactive controls

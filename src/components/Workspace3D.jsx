@@ -3,7 +3,8 @@ import {
   undo, redo, toggleMuteAudio, toggleWireMode, resetCamera,
   toggleLeftPanel, toggleRightPanel, toggleSchematicPanel,
   setActiveWireColor, applyPreset, openCommunityLibrary,
-  generateAICircuit, handleHardwareSlider, handleHardwareButton,
+  generateAICircuit, askAITutor,
+  handleHardwareSlider, handleHardwareButton,
   handleDhtTemp, handleDhtHumidity, handleDistanceSlider,
   handlePirMotion, handleServoAngle, handleMotorSpeed, handleRelayToggle,
   moveStep,
@@ -34,9 +35,12 @@ function ToolBtn({ id, icon, label, onClick, active = false, disabled = false })
 }
 
 /* ── AI Tutor suggestion button ── */
-function SuggestionBtn({ children }) {
+function SuggestionBtn({ children, onClick }) {
   return (
-    <button className="w-full flex items-center justify-between text-left text-[12px] text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors cursor-pointer group">
+    <button
+      onClick={onClick}
+      className="w-full flex items-center justify-between text-left text-[12px] text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors cursor-pointer group"
+    >
       <span>{children}</span>
       <i className="fa-solid fa-chevron-right text-[10px] opacity-50 group-hover:opacity-100 transition-opacity"></i>
     </button>
@@ -433,77 +437,91 @@ export default function Workspace3D() {
           <div className="px-4 pt-3 pb-2 border-b border-slate-100 shrink-0 flex items-center gap-2">
             <i className="fa-solid fa-wand-magic-sparkles text-purple-500 text-sm"></i>
             <h3 className="text-sm font-bold text-slate-900">AI Tutor</h3>
+            <span className="ml-auto text-[10px] text-slate-400 font-medium">Ask questions · Build circuits</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
-            {/* Greeting */}
-            <div>
-              <p className="text-sm font-semibold text-slate-800">
-                Hi Azizbek! 👋
-              </p>
+          <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 min-h-0">
+            {/* Greeting + quick-start presets (shown when no chat yet) */}
+            <div id="tutor-welcome">
+              <p className="text-sm font-semibold text-slate-800">Hi there! 👋</p>
               <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                I&apos;m your AI Tutor. Ask me anything about your circuit or project.
+                I&apos;m your AI Tutor. Ask me anything about your circuit, or describe a project to build it automatically.
               </p>
+
+              {/* Quick-start presets */}
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                <button
+                  onClick={() => applyPreset('blink')}
+                  className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-medium"
+                >
+                  <i className="fa-solid fa-lightbulb text-amber-400"></i> LED Blink
+                </button>
+                <button
+                  onClick={() => applyPreset('night')}
+                  className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-medium"
+                >
+                  <i className="fa-solid fa-moon text-slate-400"></i> Night Light
+                </button>
+                <button
+                  onClick={() => applyPreset('alarm')}
+                  className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-medium"
+                >
+                  <i className="fa-solid fa-bell text-red-400"></i> Siren Alarm
+                </button>
+                <button
+                  onClick={() => applyPreset('button')}
+                  className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-medium"
+                >
+                  <i className="fa-solid fa-hand-pointer text-blue-400"></i> Push Trigger
+                </button>
+                <button
+                  onClick={openCommunityLibrary}
+                  className="inline-flex items-center gap-1 text-[10px] bg-gradient-to-r from-purple-500 to-blue-600 text-white hover:from-purple-600 hover:to-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-semibold"
+                >
+                  <i className="fa-solid fa-users text-[9px]"></i> Community
+                </button>
+              </div>
+
+              {/* Suggestion buttons */}
+              <div className="space-y-0.5 mt-2 -mx-1">
+                <SuggestionBtn onClick={() => askAITutor('Why is my LED not turning on?')}>
+                  Why is my LED not turning on?
+                </SuggestionBtn>
+                <SuggestionBtn onClick={() => askAITutor('How does a resistor work?')}>
+                  How does a resistor work?
+                </SuggestionBtn>
+                <SuggestionBtn onClick={() => askAITutor('Explain this circuit step by step')}>
+                  Explain this circuit step by step
+                </SuggestionBtn>
+                <SuggestionBtn onClick={() => askAITutor('How can I improve this project?')}>
+                  How can I improve this project?
+                </SuggestionBtn>
+              </div>
             </div>
 
-            {/* Quick-start presets */}
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                onClick={() => applyPreset('blink')}
-                className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-medium"
-              >
-                <i className="fa-solid fa-lightbulb text-amber-400"></i> LED Blink
-              </button>
-              <button
-                onClick={() => applyPreset('night')}
-                className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-medium"
-              >
-                <i className="fa-solid fa-moon text-slate-400"></i> Night Light
-              </button>
-              <button
-                onClick={() => applyPreset('alarm')}
-                className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-medium"
-              >
-                <i className="fa-solid fa-bell text-red-400"></i> Siren Alarm
-              </button>
-              <button
-                onClick={() => applyPreset('button')}
-                className="inline-flex items-center gap-1 text-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-medium"
-              >
-                <i className="fa-solid fa-hand-pointer text-blue-400"></i> Push Trigger
-              </button>
-              <button
-                onClick={openCommunityLibrary}
-                className="inline-flex items-center gap-1 text-[10px] bg-gradient-to-r from-purple-500 to-blue-600 text-white hover:from-purple-600 hover:to-blue-700 rounded-lg px-2.5 py-1 transition cursor-pointer font-semibold"
-              >
-                <i className="fa-solid fa-users text-[9px]"></i> Community
-              </button>
-            </div>
-
-            {/* Suggestion buttons */}
-            <div className="space-y-0.5 -mx-1">
-              <SuggestionBtn>Why is my LED not turning on?</SuggestionBtn>
-              <SuggestionBtn>How does a resistor work?</SuggestionBtn>
-              <SuggestionBtn>Explain this circuit step by step</SuggestionBtn>
-              <SuggestionBtn>How can I improve this project?</SuggestionBtn>
-            </div>
+            {/* ── Chat history (messages appended here by JS) ── */}
+            <div
+              id="tutor-chat"
+              className="flex flex-col gap-2.5 min-h-0"
+            />
 
             {/* Spacer to push input to bottom */}
             <div className="flex-1" />
 
             {/* AI input */}
-            <div className="relative">
+            <div className="relative shrink-0">
               <input
                 id="ai-input"
                 type="text"
-                placeholder="Ask anything..."
+                placeholder="Ask a question or describe a circuit to build…"
+                onKeyDown={(e) => { if (e.key === 'Enter') generateAICircuit(); }}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
               />
               <button
                 id="btn-generate-ai"
                 onClick={generateAICircuit}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition cursor-pointer"
-                title="Build circuit with AI"
+                title="Send (Enter)"
               >
                 <i className="fa-solid fa-arrow-right text-[10px]"></i>
               </button>
