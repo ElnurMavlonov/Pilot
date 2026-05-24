@@ -70,11 +70,12 @@ export default function TopBar() {
 
       {/* ── Logo ── */}
       <div className="flex items-center gap-2 mr-1 shrink-0">
-        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
-          <i className="fa-solid fa-puzzle-piece text-white text-sm"></i>
-        </div>
-        <span className="font-bold text-slate-900 text-base tracking-tight">Pilot</span>
-        <span className="text-[10px] bg-blue-600 text-white font-bold px-1.5 py-0.5 rounded-md tracking-wider">
+        <svg viewBox="0 0 100 100" className="w-8 h-8 text-blue-600" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 15 25 h 50 a 10 10 0 0 1 10 10 v 10 a 10 10 0 0 0 -10 10 h -20 a 10 10 0 0 1 -10 10 v 10 a 10 10 0 0 0 10 10 h 30 a 15 15 0 0 0 15 -15 v -45 a 15 15 0 0 0 -15 -15 h -60 a 15 15 0 0 0 -15 15 v 0 a 15 15 0 0 0 15 15 z" />
+          <path d="M 15 25 h 45 c 10 0 15 5 15 15 c 0 10 -5 15 -15 15 h -10 c -10 0 -15 5 -15 15 c 0 10 5 15 15 15 h 35 c 10 0 15 -5 15 -15 v -50 c 0 -10 -5 -15 -15 -15 h -70 c -10 0 -15 5 -15 15 c 0 10 5 15 15 15 z" />
+        </svg>
+        <span className="font-bold text-slate-900 text-xl tracking-tight">Pilot</span>
+        <span className="text-[10px] bg-blue-600 text-white font-bold px-2 py-0.5 rounded-full tracking-wider">
           PRO
         </span>
       </div>

@@ -8,6 +8,8 @@
 // expected on window (loaded via CDN in index.html).
 // ─────────────────────────────────────────────────────────────────
 
+import { ArduinoRuntime } from './arduino-runtime.js';
+
 /* eslint-disable */
 /* global THREE */
 
@@ -602,6 +604,10 @@ void loop() {
         let isSimulating = false;
         let simInterval = null;
 
+        // Arduino firmware runtime (drives simulation from code)
+        let arduinoRuntime = null;
+        let firmwareActive = false;  // true when firmware runtime is driving the simulation
+
         // Three.js State variables
         let scene, camera, renderer, controls;
         let meshGroup;
@@ -1073,6 +1079,9 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
                 const target = aiFreeBuildStepIndex + direction;
                 if (target >= 0 && target < aiFreeBuildSteps.length) {
                     renderAIFreeBuildStep(target);
+                } else if (direction > 0 && aiFreeBuildStepIndex === aiFreeBuildSteps.length - 1) {
+                    // Last step "Run Sim" button pressed — run the firmware
+                    runCustomCode();
                 }
             }
         }
@@ -2763,6 +2772,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
                 btn.innerHTML = `<i class="fa-solid fa-play"></i> Run Sandbox`;
                 btn.className = "flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-300 px-4 py-3.5 rounded-2xl font-semibold text-sm shadow-xl shadow-emerald-900/10 cursor-pointer";
 
+                stopArduinoRuntime();
                 clearInterval(simInterval);
                 stopOscilloscope();
                 stopBuzzerTone();
@@ -2783,9 +2793,236 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             }
         }
 
+        /** Stop the Arduino firmware runtime if running */
+        function stopArduinoRuntime() {
+            if (arduinoRuntime) {
+                arduinoRuntime.stop();
+                arduinoRuntime = null;
+            }
+            firmwareActive = false;
+            // Reset any LEDs that were driven by firmware
+            resetFirmwareDrivenVisuals();
+        }
+
+        /** Reset visuals that the firmware runtime was controlling */
+        function resetFirmwareDrivenVisuals() {
+            placedComponents.forEach(g => {
+                if (g.userData.type === 'led') {
+                    g.traverse(child => {
+                        if (child.name === 'ledDome' || child.name === 'ledTip') {
+                            if (child.material) {
+                                child.material.emissive.setHex(0x000000);
+                                child.material.emissiveIntensity = 0;
+                                child.material.opacity = 0.5;
+                            }
+                        }
+                        if (child.name === 'ledGlow') {
+                            child.intensity = 0;
+                        }
+                    });
+                }
+                if (g.userData.type === 'buzzer') {
+                    g.traverse(child => {
+                        if (child.name === 'buzzerBody' && child.material) {
+                            child.material.emissive.setHex(0x000000);
+                            child.material.emissiveIntensity = 0;
+                        }
+                    });
+                }
+            });
+        }
+
+        // ========================================================
+        // PIN MAP BUILDER — Maps Arduino pins to 3D components
+        // ========================================================
+
+        /**
+         * Walk the wire graph to build a mapping: Arduino pin number → connected component.
+         * This lets the firmware runtime know which LED/buzzer/servo is on which pin.
+         */
+        function buildPinMap() {
+            const pinMap = {};
+
+            // Find the Arduino/ESP32 board component
+            const board = placedComponents.find(g =>
+                g.userData.type === 'arduino' || g.userData.type === 'esp32'
+            );
+            if (!board) return pinMap;
+
+            const boardId = board.userData.instanceId;
+
+            // For each wire, check if one end is the board
+            placedWires.forEach(wire => {
+                let boardPinIdx = -1;
+                let otherCompId = null;
+                let otherPinIdx = -1;
+
+                if (wire.fromCompId === boardId) {
+                    boardPinIdx = wire.fromPinIdx;
+                    otherCompId = wire.toCompId;
+                    otherPinIdx = wire.toPinIdx;
+                } else if (wire.toCompId === boardId) {
+                    boardPinIdx = wire.toPinIdx;
+                    otherCompId = wire.fromCompId;
+                    otherPinIdx = wire.fromPinIdx;
+                } else {
+                    // Wire between two non-board components — trace through
+                    // For now, handle direct board connections. Indirect (through resistors)
+                    // we handle below.
+                    return;
+                }
+
+                // Get the Arduino pin name from the board's pin defs
+                const boardPins = getComponentPinDefs(board);
+                const boardPin = boardPins[boardPinIdx];
+                if (!boardPin) return;
+
+                const pinNum = ArduinoRuntime.PIN_NAME_MAP[boardPin.name];
+                if (pinNum === undefined || pinNum < 0) return; // power/GND pin, skip
+
+                // Find the target component
+                const targetComp = placedComponents.find(g => g.userData.instanceId === otherCompId);
+                if (!targetComp) return;
+
+                const targetType = targetComp.userData.type;
+
+                // If target is a resistor, trace through it to find the actual component
+                if (targetType === 'resistor') {
+                    // Find the other end of the resistor
+                    const otherResPin = otherPinIdx === 0 ? 1 : 0;
+                    const nextWire = placedWires.find(w =>
+                        w !== wire && (
+                            (w.fromCompId === otherCompId && w.fromPinIdx === otherResPin) ||
+                            (w.toCompId === otherCompId && w.toPinIdx === otherResPin)
+                        )
+                    );
+                    if (nextWire) {
+                        const nextCompId = nextWire.fromCompId === otherCompId
+                            ? nextWire.toCompId : nextWire.fromCompId;
+                        const nextComp = placedComponents.find(g => g.userData.instanceId === nextCompId);
+                        if (nextComp && nextComp.userData.type !== 'arduino' && nextComp.userData.type !== 'esp32') {
+                            pinMap[pinNum] = {
+                                componentType: nextComp.userData.type,
+                                componentId: nextComp.userData.instanceId,
+                                componentGroup: nextComp
+                            };
+                            return;
+                        }
+                    }
+                }
+
+                // Direct connection to a component
+                if (targetType !== 'resistor' && targetType !== 'breadboard') {
+                    pinMap[pinNum] = {
+                        componentType: targetType,
+                        componentId: targetComp.userData.instanceId,
+                        componentGroup: targetComp
+                    };
+                }
+            });
+
+            return pinMap;
+        }
+
+        // ========================================================
+        // FIRMWARE EFFECT HANDLERS — Drive 3D visuals from code
+        // ========================================================
+
+        /** Turn an LED on/off based on digitalWrite from firmware */
+        function firmwareSetLED(componentGroup, on) {
+            if (!componentGroup) return;
+            const variant = componentGroup.userData.variant || 'red';
+            const colorMap = { red: 0xef4444, green: 0x22c55e, blue: 0x3b82f6 };
+            const ledColorHex = colorMap[variant] || colorMap.red;
+
+            componentGroup.traverse(child => {
+                if (child.name === 'ledDome' || child.name === 'ledTip') {
+                    if (child.material) {
+                        if (on) {
+                            child.material.emissive.setHex(ledColorHex);
+                            child.material.emissiveIntensity = 0.9;
+                            child.material.opacity = 0.85;
+                        } else {
+                            child.material.emissive.setHex(0x000000);
+                            child.material.emissiveIntensity = 0;
+                            child.material.opacity = 0.5;
+                        }
+                    }
+                }
+                if (child.name === 'ledGlow') {
+                    child.intensity = on ? 2.5 : 0;
+                }
+            });
+        }
+
+        /** Set LED brightness via analogWrite (PWM) from firmware */
+        function firmwareSetLEDPWM(componentGroup, value) {
+            if (!componentGroup) return;
+            const brightness = value / 255;
+            const variant = componentGroup.userData.variant || 'red';
+            const colorMap = { red: 0xef4444, green: 0x22c55e, blue: 0x3b82f6 };
+            const ledColorHex = colorMap[variant] || colorMap.red;
+
+            componentGroup.traverse(child => {
+                if (child.name === 'ledDome' || child.name === 'ledTip') {
+                    if (child.material) {
+                        child.material.emissive.setHex(ledColorHex);
+                        child.material.emissiveIntensity = brightness * 0.9;
+                        child.material.opacity = 0.5 + brightness * 0.35;
+                    }
+                }
+                if (child.name === 'ledGlow') {
+                    child.intensity = brightness * 2.5;
+                }
+            });
+        }
+
+        /** Set servo angle from firmware */
+        function firmwareSetServo(componentGroup, angle) {
+            if (!componentGroup) return;
+            const angleRad = (angle - 90) * Math.PI / 180;
+            componentGroup.traverse(child => {
+                if (child.name === 'servoHorn') {
+                    child.rotation.y = angleRad;
+                }
+            });
+        }
+
+        /** Set relay state from firmware */
+        function firmwareSetRelay(componentGroup, on) {
+            if (!componentGroup) return;
+            componentGroup.traverse(child => {
+                if (child.name === 'relayLed' && child.material) {
+                    if (on) {
+                        child.material.emissive.setHex(0x00ff00);
+                        child.material.emissiveIntensity = 0.8;
+                    } else {
+                        child.material.emissive.setHex(0x000000);
+                        child.material.emissiveIntensity = 0;
+                    }
+                }
+            });
+        }
+
+        /** Set L298N driver board visual from firmware */
+        function firmwareSetDriverBoard(componentGroup, on) {
+            if (!componentGroup) return;
+            componentGroup.traverse(child => {
+                if (child.name === 'driverBoard' && child.material) {
+                    child.material.emissive.setRGB(0, on ? 0.2 : 0, 0);
+                    child.material.emissiveIntensity = on ? 0.35 : 0;
+                }
+            });
+        }
+
         function runSimulationInterval() {
             simInterval = setInterval(() => {
                 if (!isSimulating) return;
+                // If firmware runtime is active, it drives the outputs — skip generic readouts
+                if (firmwareActive) {
+                    updatePlacedSensorVisuals();
+                    return;
+                }
                 const types = new Set(placedComponents.map(g => g.userData.type));
                 if (types.has('dht11')) appendSerial(`DHT11 → Temp: ${freeBuildState.activeTempC}°C  Humidity: ${freeBuildState.activeHumidity}%`);
                 if (types.has('hcsr04')) appendSerial(`HC-SR04 → Distance: ${freeBuildState.activeDistanceCm} cm`);
@@ -4172,6 +4409,19 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
 
         function getOscVoltage() {
             if (!isSimulating) return null;
+            // If firmware is active, read the first output pin's state for a real waveform
+            if (firmwareActive && arduinoRuntime) {
+                const states = arduinoRuntime._pinState || {};
+                const pins = Object.keys(states);
+                if (pins.length > 0) {
+                    // Use first pin with output state
+                    const val = states[pins[0]];
+                    if (typeof val === 'number') {
+                        // Digital: 0V or 5V. Analog (PWM): scale 0-255 → 0-5V
+                        return val <= 1 ? val * 5 : (val / 255) * 5;
+                    }
+                }
+            }
             return 2.5 + Math.sin(Date.now() * 0.002) * 0.3;
         }
 
@@ -4310,10 +4560,142 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
         // EDITABLE FIRMWARE IDE — Run Custom Code
         // ========================================================
         function runCustomCode() {
+            const codeEl = document.getElementById('code-content');
+            const source = codeEl ? (codeEl.value || codeEl.textContent || '').trim() : '';
+
+            if (!source || source === '// Arduino C++ sketch\nvoid setup() {}\nvoid loop() {}') {
+                showToast('Write or generate firmware code first!', false);
+                return;
+            }
+
+            // Ensure simulation is running
             if (!isSimulating) {
                 toggleSimulation();
             }
-            showToast("Custom firmware applied — simulation running!", false);
+
+            // Stop any previous firmware runtime
+            stopArduinoRuntime();
+
+            // Build pin-to-component map from wire connections
+            const pinMap = buildPinMap();
+
+            // Create runtime with effect callbacks
+            arduinoRuntime = new ArduinoRuntime({
+                sensorState: freeBuildState,
+
+                onDigitalWrite: (pin, value) => {
+                    const comp = pinMap[pin];
+                    if (!comp) return;
+                    switch (comp.componentType) {
+                        case 'led':
+                            firmwareSetLED(comp.componentGroup, value === 1);
+                            break;
+                        case 'buzzer':
+                            // digitalWrite to buzzer = on/off at default freq
+                            if (value === 1) startBuzzerTone(1000);
+                            else stopBuzzerTone();
+                            break;
+                        case 'relay':
+                            firmwareSetRelay(comp.componentGroup, value === 1);
+                            freeBuildState.activeRelayOn = value === 1;
+                            break;
+                        case 'l298n':
+                            firmwareSetDriverBoard(comp.componentGroup, value === 1);
+                            break;
+                        case 'dc_motor':
+                            freeBuildState.activeMotorSpeed = value === 1 ? 100 : 0;
+                            break;
+                    }
+                },
+
+                onAnalogWrite: (pin, value) => {
+                    const comp = pinMap[pin];
+                    if (!comp) return;
+                    switch (comp.componentType) {
+                        case 'led':
+                            firmwareSetLEDPWM(comp.componentGroup, value);
+                            break;
+                        case 'dc_motor':
+                            freeBuildState.activeMotorSpeed = Math.round((value / 255) * 100);
+                            break;
+                        case 'l298n':
+                            firmwareSetDriverBoard(comp.componentGroup, value > 0);
+                            freeBuildState.activeMotorSpeed = Math.round((value / 255) * 100);
+                            break;
+                    }
+                },
+
+                onTone: (pin, freq) => {
+                    startBuzzerTone(freq);
+                    // Visual feedback on buzzer body
+                    const comp = pinMap[pin];
+                    if (comp && comp.componentType === 'buzzer') {
+                        comp.componentGroup.traverse(child => {
+                            if (child.name === 'buzzerBody' && child.material) {
+                                child.material.emissive.setHex(0xa855f7);
+                                child.material.emissiveIntensity = 0.4;
+                            }
+                        });
+                    }
+                },
+
+                onNoTone: (pin) => {
+                    stopBuzzerTone();
+                    const comp = pinMap[pin];
+                    if (comp && comp.componentType === 'buzzer') {
+                        comp.componentGroup.traverse(child => {
+                            if (child.name === 'buzzerBody' && child.material) {
+                                child.material.emissive.setHex(0x000000);
+                                child.material.emissiveIntensity = 0;
+                            }
+                        });
+                    }
+                },
+
+                onSerialPrint: (msg) => {
+                    appendSerial(msg);
+                },
+
+                onServoWrite: (pin, angle) => {
+                    const comp = pinMap[pin];
+                    if (comp && comp.componentType === 'servo') {
+                        firmwareSetServo(comp.componentGroup, angle);
+                        freeBuildState.activeServoAngle = angle;
+                    }
+                },
+
+                onLoopTick: () => {
+                    updatePlacedSensorVisuals();
+                },
+            });
+
+            arduinoRuntime.setPinMap(pinMap);
+            firmwareActive = true;
+
+            // Update IDE status
+            const statusEl = document.querySelector('#panel-ide .bg-emerald-400');
+            if (statusEl) statusEl.classList.add('animate-pulse');
+            const statusText = document.querySelector('#panel-ide .text-slate-500');
+            if (statusText) statusText.textContent = 'Firmware running...';
+
+            showToast('⚡ Firmware uploaded — simulation running!', false);
+            appendSerial('── Firmware uploaded ──');
+
+            // Execute the firmware asynchronously
+            arduinoRuntime.execute(source).then(() => {
+                if (firmwareActive) {
+                    appendSerial('── Firmware execution ended ──');
+                    firmwareActive = false;
+                    if (statusText) statusText.textContent = 'Ready to upload';
+                }
+            }).catch(err => {
+                if (err.message !== '__ARDUINO_STOP__') {
+                    appendSerial(`⚠ Error: ${err.message}`);
+                    console.error('Firmware error:', err);
+                }
+                firmwareActive = false;
+                if (statusText) statusText.textContent = 'Ready to upload';
+            });
         }
 
         // ========================================================
