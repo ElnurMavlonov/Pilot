@@ -12,6 +12,9 @@ import RightPanel from './components/RightPanel.jsx';
 import ShortcutsOverlay from './components/ShortcutsOverlay.jsx';
 import TourOverlay from './components/TourOverlay.jsx';
 import CommunityLibrary from './components/CommunityLibrary.jsx';
+import SettingsModal from './components/SettingsModal.jsx';
+import SupportModal from './components/SupportModal.jsx';
+import ProfileModal from './components/ProfileModal.jsx';
 
 export default function App() {
   useEffect(() => {
@@ -41,6 +44,9 @@ export default function App() {
       <ShortcutsOverlay />
       <TourOverlay />
       <CommunityLibrary />
+      <SettingsModal />
+      <SupportModal />
+      <ProfileModal />
     </div>
   );
 }

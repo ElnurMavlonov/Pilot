@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   undo, redo, toggleMuteAudio, toggleWireMode, resetCamera,
   toggleLeftPanel, toggleRightPanel, toggleSchematicPanel,
@@ -48,6 +48,17 @@ function QuestionChip({ children, onClick }) {
 
 export default function Workspace3D() {
   const [zoomPct] = useState(100);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  useEffect(() => {
+    const sync = (e) => {
+      setCanUndo(Boolean(e.detail?.canUndo));
+      setCanRedo(Boolean(e.detail?.canRedo));
+    };
+    window.addEventListener('pilot:undo-redo', sync);
+    return () => window.removeEventListener('pilot:undo-redo', sync);
+  }, []);
 
   return (
     <main className="flex-1 flex flex-col min-h-0 min-w-0 relative overflow-hidden bg-white">
@@ -88,8 +99,8 @@ export default function Workspace3D() {
         <Sep />
 
         {/* Functional tools */}
-        <ToolBtn id="btn-undo" icon="fa-solid fa-rotate-left" label="Undo (Ctrl+Z)" onClick={undo} disabled />
-        <ToolBtn id="btn-redo" icon="fa-solid fa-rotate-right" label="Redo (Ctrl+Y)" onClick={redo} disabled />
+        <ToolBtn id="btn-undo" icon="fa-solid fa-rotate-left" label="Undo (Ctrl+Z)" onClick={undo} disabled={!canUndo} />
+        <ToolBtn id="btn-redo" icon="fa-solid fa-rotate-right" label="Redo (Ctrl+Y)" onClick={redo} disabled={!canRedo} />
 
         <Sep />
 

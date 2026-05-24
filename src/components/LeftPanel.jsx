@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { openCommunityLibrary } from '../lib/iotify-app.js';
+import { openCommunityLibrary, openSettings, openSupport } from '../lib/iotify-app.js';
 
 function NavItem({ icon, label, active = false, onClick }) {
   return (
@@ -27,11 +27,21 @@ function SectionLabel({ children }) {
 
 export default function LeftPanel() {
   const [communityOpen, setCommunityOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
 
   useEffect(() => {
-    const onToggle = (e) => setCommunityOpen(Boolean(e.detail?.open));
-    window.addEventListener('pilot:community-library', onToggle);
-    return () => window.removeEventListener('pilot:community-library', onToggle);
+    const onCommunity = (e) => setCommunityOpen(Boolean(e.detail?.open));
+    const onSettings = (e) => setSettingsOpen(Boolean(e.detail?.open));
+    const onSupport = (e) => setSupportOpen(Boolean(e.detail?.open));
+    window.addEventListener('pilot:community-library', onCommunity);
+    window.addEventListener('pilot:settings', onSettings);
+    window.addEventListener('pilot:support', onSupport);
+    return () => {
+      window.removeEventListener('pilot:community-library', onCommunity);
+      window.removeEventListener('pilot:settings', onSettings);
+      window.removeEventListener('pilot:support', onSupport);
+    };
   }, []);
 
   return (
@@ -45,7 +55,7 @@ export default function LeftPanel() {
         <SectionLabel>Main</SectionLabel>
         <NavItem icon="fa-solid fa-table-cells-large" label="Dashboard" />
         <NavItem icon="fa-solid fa-folder-open" label="Projects" />
-        <NavItem icon="fa-solid fa-flask" label="Virtual Lab" active={!communityOpen} />
+        <NavItem icon="fa-solid fa-flask" label="Virtual Lab" active={!communityOpen && !settingsOpen && !supportOpen} />
 
         <SectionLabel>Learning</SectionLabel>
         <NavItem icon="fa-solid fa-wand-magic-sparkles" label="AI Tutor" />
@@ -63,8 +73,8 @@ export default function LeftPanel() {
 
       {/* ── Bottom items ── */}
       <div className="px-2 pb-3 pt-2 border-t border-slate-100 space-y-0.5">
-        <NavItem icon="fa-solid fa-gear" label="Settings" />
-        <NavItem icon="fa-solid fa-circle-question" label="Support" />
+        <NavItem icon="fa-solid fa-gear" label="Settings" active={settingsOpen} onClick={openSettings} />
+        <NavItem icon="fa-solid fa-circle-question" label="Support" active={supportOpen} onClick={openSupport} />
       </div>
     </aside>
   );

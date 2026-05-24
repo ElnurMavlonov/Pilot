@@ -1,6 +1,8 @@
+import { useEffect, useRef, useState } from 'react';
 import {
   saveProject, loadProject, exportAsPDF, shareCircuitLink,
   toggleDarkMode, toggleSimulation, toggleShortcutsOverlay,
+  openSettings, openSupport, openProfile, signOut,
 } from '../lib/iotify-app.js';
 
 const COLLABORATORS = [
@@ -9,7 +11,60 @@ const COLLABORATORS = [
   { initials: 'RS', bg: 'from-emerald-400 to-emerald-600' },
 ];
 
+const USER = { name: 'Azizbek', role: 'Student', initial: 'A' };
+
+function ProfileMenuItem({ icon, label, onClick, danger = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer text-left ${
+        danger
+          ? 'text-red-600 hover:bg-red-50'
+          : 'text-slate-700 hover:bg-slate-100'
+      }`}
+    >
+      <i className={`${icon} text-xs w-4 text-center ${danger ? 'text-red-400' : 'text-slate-400'}`}></i>
+      {label}
+    </button>
+  );
+}
+
 export default function TopBar() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const onToggle = (e) => setMenuOpen(Boolean(e.detail?.open));
+    window.addEventListener('pilot:profile-menu', onToggle);
+    return () => window.removeEventListener('pilot:profile-menu', onToggle);
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+        window.dispatchEvent(new CustomEvent('pilot:profile-menu', { detail: { open: false } }));
+      }
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [menuOpen]);
+
+  const toggleMenu = () => {
+    const next = !menuOpen;
+    setMenuOpen(next);
+    window.dispatchEvent(new CustomEvent('pilot:profile-menu', { detail: { open: next } }));
+  };
+
+  const closeMenu = () => {
+    setMenuOpen(false);
+    window.dispatchEvent(new CustomEvent('pilot:profile-menu', { detail: { open: false } }));
+  };
+
+  const run = (fn) => () => { closeMenu(); fn(); };
+
   return (
     <header className="h-14 border-b border-slate-200 bg-white flex items-center px-4 gap-3 shrink-0 z-20">
 
@@ -24,10 +79,8 @@ export default function TopBar() {
         </span>
       </div>
 
-      {/* ── Divider ── */}
       <div className="w-px h-6 bg-slate-200 shrink-0" />
 
-      {/* ── Project name + saved status ── */}
       <div className="flex items-center gap-2.5 shrink-0">
         <button className="flex items-center gap-1.5 font-semibold text-slate-800 text-sm hover:text-slate-900 transition-colors">
           Smart LED Blinker
@@ -39,7 +92,6 @@ export default function TopBar() {
         </span>
       </div>
 
-      {/* ── Collaborator avatars ── */}
       <div className="flex items-center shrink-0 ml-1">
         <div className="flex -space-x-2">
           {COLLABORATORS.map((c) => (
@@ -54,10 +106,8 @@ export default function TopBar() {
         <span className="text-[11px] text-slate-500 font-medium ml-2">+3</span>
       </div>
 
-      {/* ── Spacer ── */}
       <div className="flex-1" />
 
-      {/* ── Run Simulation (primary CTA) ── */}
       <button
         id="btn-simulation"
         onClick={toggleSimulation}
@@ -67,7 +117,6 @@ export default function TopBar() {
         Run Simulation
       </button>
 
-      {/* ── Secondary actions ── */}
       <div className="flex items-center gap-0.5 shrink-0">
         <button
           onClick={saveProject}
@@ -86,7 +135,6 @@ export default function TopBar() {
           Share
         </button>
 
-        {/* ── Icon-only buttons ── */}
         <button
           id="dark-toggle-btn"
           onClick={toggleDarkMode}
@@ -111,24 +159,51 @@ export default function TopBar() {
         </button>
       </div>
 
-      {/* ── Divider ── */}
       <div className="w-px h-6 bg-slate-200 shrink-0" />
 
-      {/* ── User profile ── */}
-      <div className="flex items-center gap-2 shrink-0 cursor-pointer group">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white shadow-sm flex items-center justify-center text-white text-xs font-bold">
-          A
-        </div>
-        <div className="leading-none">
-          <div className="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">
-            Azizbek
+      {/* ── User profile dropdown ── */}
+      <div ref={menuRef} className="relative shrink-0">
+        <button
+          type="button"
+          id="profile-trigger"
+          onClick={toggleMenu}
+          aria-expanded={menuOpen}
+          aria-haspopup="true"
+          className="flex items-center gap-2 cursor-pointer group rounded-lg px-1 py-1 hover:bg-slate-50 transition-colors"
+        >
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white shadow-sm flex items-center justify-center text-white text-xs font-bold">
+            {USER.initial}
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">Student</div>
-        </div>
-        <i className="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+          <div className="leading-none text-left">
+            <div className="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">
+              {USER.name}
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">{USER.role}</div>
+          </div>
+          <i className={`fa-solid fa-chevron-down text-[10px] text-slate-400 transition-transform ${menuOpen ? 'rotate-180' : ''}`}></i>
+        </button>
+
+        {menuOpen && (
+          <div
+            id="profile-menu"
+            className="profile-dropdown absolute right-0 top-full mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 z-50"
+          >
+            <div className="px-3 py-2 border-b border-slate-100 mb-1">
+              <p className="text-xs font-semibold text-slate-800">{USER.name}</p>
+              <p className="text-[10px] text-slate-400">{USER.role} · Pilot PRO</p>
+            </div>
+            <div className="px-1.5">
+              <ProfileMenuItem icon="fa-solid fa-user" label="My Profile" onClick={run(openProfile)} />
+              <ProfileMenuItem icon="fa-solid fa-gear" label="Settings" onClick={run(openSettings)} />
+              <ProfileMenuItem icon="fa-solid fa-circle-question" label="Help & Support" onClick={run(openSupport)} />
+            </div>
+            <div className="border-t border-slate-100 mt-1 pt-1 px-1.5">
+              <ProfileMenuItem icon="fa-solid fa-right-from-bracket" label="Sign Out" onClick={run(signOut)} danger />
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ── Hidden inputs used by JS ── */}
       <input
         id="load-file-input"
         type="file"
@@ -136,7 +211,6 @@ export default function TopBar() {
         className="hidden"
         onChange={(e) => loadProject(e.target)}
       />
-      {/* PDF export trigger (called via button above if needed) */}
       <button id="export-pdf-trigger" onClick={exportAsPDF} className="hidden" />
     </header>
   );

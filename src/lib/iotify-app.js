@@ -159,6 +159,13 @@
             if ((e.key === 't' || e.key === 'T') && !e.metaKey && !e.ctrlKey && !isEditing) resetTour();
             if ((e.key === 'w' || e.key === 'W') && !e.metaKey && !e.ctrlKey && !isEditing) toggleWireMode();
             if (e.key === 'Escape') {
+                closeProfileMenu();
+                const settingsModal = document.getElementById('settings-modal');
+                if (settingsModal?.classList.contains('open')) { closeSettings(); return; }
+                const supportModal = document.getElementById('support-modal');
+                if (supportModal?.classList.contains('open')) { closeSupport(); return; }
+                const profileModal = document.getElementById('profile-modal');
+                if (profileModal?.classList.contains('open')) { closeProfile(); return; }
                 const overlay = document.getElementById('shortcuts-overlay');
                 if (overlay && overlay.classList.contains('open')) overlay.classList.remove('open');
                 // Also close tour if active
@@ -3009,6 +3016,8 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
 
         /** Factory: instantiate any component by type, place it in the scene */
         function createComponent(type, variant, x, z) {
+            saveUndoSnapshot(); // save pre-add state so one Undo click removes this component
+
             const key = variant ? `${type}_${variant}` : type;
             componentCounters[key] = (componentCounters[key] || 0) + 1;
             const instanceId = `${key}_${componentCounters[key]}`;
@@ -3042,7 +3051,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             attachPinSpheres(group);
             if (isWireMode) group.traverse(c => { if (c.userData.isPinSphere) c.visible = true; });
             placedComponents.push(group);
-            saveUndoSnapshot();
+            updateUndoRedoUI();
             return group;
         }
 
@@ -3293,6 +3302,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
                 btn.classList.toggle('bg-blue-50', active);
                 btn.classList.toggle('border-transparent', !active);
                 btn.classList.toggle('text-slate-500', !active);
+                if (active) btn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
             });
 
             if (tabName === 'parts') {
@@ -3532,10 +3542,15 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
         }
 
         function updateUndoRedoUI() {
+            const canUndo = undoStack.length > 0;
+            const canRedo = redoStack.length > 0;
             const uBtn = document.getElementById('btn-undo');
             const rBtn = document.getElementById('btn-redo');
-            if (uBtn) uBtn.disabled = undoStack.length === 0;
-            if (rBtn) rBtn.disabled = redoStack.length === 0;
+            if (uBtn) uBtn.disabled = !canUndo;
+            if (rBtn) rBtn.disabled = !canRedo;
+            window.dispatchEvent(new CustomEvent('pilot:undo-redo', {
+                detail: { canUndo, canRedo },
+            }));
         }
 
         // ========================================================
@@ -3546,6 +3561,7 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
             localStorage.setItem('iotify-theme', isDark ? 'dark' : 'light');
             const icon = document.querySelector('#dark-toggle-btn i');
             if (icon) icon.className = isDark ? 'fa-solid fa-sun text-xs' : 'fa-solid fa-moon text-xs';
+            window.dispatchEvent(new CustomEvent('pilot:theme', { detail: { dark: isDark } }));
         }
 
         function initTheme() {
@@ -3562,6 +3578,100 @@ Answer the student's question in a friendly, clear, and concise way. Reference t
         // ========================================================
         function toggleShortcutsOverlay() {
             document.getElementById('shortcuts-overlay').classList.toggle('open');
+        }
+
+        // ========================================================
+        // SETTINGS, SUPPORT & PROFILE
+        // ========================================================
+
+        function closeProfileMenu() {
+            window.dispatchEvent(new CustomEvent('pilot:profile-menu', { detail: { open: false } }));
+        }
+
+        function setSettingsOpen(open) {
+            const modal = document.getElementById('settings-modal');
+            if (!modal) return;
+            modal.classList.toggle('open', open);
+            document.body.classList.toggle('settings-open', open);
+            window.dispatchEvent(new CustomEvent('pilot:settings', { detail: { open } }));
+        }
+
+        function setSupportOpen(open) {
+            const modal = document.getElementById('support-modal');
+            if (!modal) return;
+            modal.classList.toggle('open', open);
+            document.body.classList.toggle('support-open', open);
+            window.dispatchEvent(new CustomEvent('pilot:support', { detail: { open } }));
+        }
+
+        function setProfileOpen(open) {
+            const modal = document.getElementById('profile-modal');
+            if (!modal) return;
+            modal.classList.toggle('open', open);
+            document.body.classList.toggle('profile-open', open);
+            window.dispatchEvent(new CustomEvent('pilot:profile', { detail: { open } }));
+        }
+
+        function openSettings() {
+            closeProfileMenu();
+            closeSupport();
+            closeProfile();
+            closeCommunityLibrary();
+            setSettingsOpen(true);
+        }
+
+        function closeSettings() {
+            setSettingsOpen(false);
+        }
+
+        function openSupport() {
+            closeProfileMenu();
+            closeSettings();
+            closeProfile();
+            closeCommunityLibrary();
+            setSupportOpen(true);
+        }
+
+        function closeSupport() {
+            setSupportOpen(false);
+        }
+
+        function openProfile() {
+            closeProfileMenu();
+            closeSettings();
+            closeSupport();
+            setProfileOpen(true);
+        }
+
+        function closeProfile() {
+            setProfileOpen(false);
+        }
+
+        function signOut() {
+            showToast('Signed out — see you soon!', false);
+        }
+
+        function initAutoSave() {
+            if (localStorage.getItem('iotify-auto-save') === null) {
+                localStorage.setItem('iotify-auto-save', 'true');
+            }
+            syncAutoSaveUI();
+        }
+
+        function isAutoSaveEnabled() {
+            return localStorage.getItem('iotify-auto-save') !== 'false';
+        }
+
+        function toggleAutoSave() {
+            const next = !isAutoSaveEnabled();
+            localStorage.setItem('iotify-auto-save', String(next));
+            syncAutoSaveUI();
+            showToast(`Auto Save: ${next ? 'ON' : 'OFF'}`, false);
+        }
+
+        function syncAutoSaveUI() {
+            const on = isAutoSaveEnabled();
+            window.dispatchEvent(new CustomEvent('pilot:auto-save', { detail: { enabled: on } }));
         }
 
         // ========================================================
@@ -4566,6 +4676,7 @@ export function initIotifyApp() {
 
     initPanels();
     initTheme();
+    initAutoSave();
     initGraphics();
     buildPartsLibraryUI();
     initTour();
@@ -4588,6 +4699,10 @@ export {
     undo, redo,
     // tabs / theme / shortcuts
     switchTab, toggleDarkMode, toggleShortcutsOverlay,
+    // settings / support / profile
+    openSettings, closeSettings, openSupport, closeSupport,
+    openProfile, closeProfile, signOut,
+    toggleAutoSave, isAutoSaveEnabled, resetTour,
     // AI
     generateAICircuit, askAITutor,
     // parts library
