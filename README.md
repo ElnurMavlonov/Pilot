@@ -1,5 +1,6 @@
 # IoTify AI — Generative 3D IoT Lab & Tutor
 
+
 > An interactive, browser-based electronics sandbox powered by Three.js 3D rendering and AI-driven circuit generation.
 
 ![IoTify AI](https://img.shields.io/badge/IoTify-AI%20Lab-6366f1?style=for-the-badge&logo=arduino)
